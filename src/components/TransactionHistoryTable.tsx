@@ -1,0 +1,289 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string;
+  transactionDate: string;
+  investment?: {
+    name: string;
+    symbol?: string;
+  };
+  bankAccount?: {
+    accountNumber: string;
+    bankName: string;
+  };
+}
+
+interface TransactionHistoryTableProps {
+  portfolioId?: string;
+  onRefresh?: () => void;
+}
+
+export default function TransactionHistoryTable({
+  portfolioId,
+  onRefresh,
+}: TransactionHistoryTableProps) {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    type: '',
+    status: '',
+    search: '',
+    limit: 20,
+    offset: 0,
+  });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    pages: 0,
+    currentPage: 1,
+  });
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [filters, portfolioId]);
+
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams();
+      if (filters.type) params.append('type', filters.type);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.search) params.append('search', filters.search);
+      params.append('limit', filters.limit.toString());
+      params.append('offset', filters.offset.toString());
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/transactions?${params}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        },
+      );
+
+      setTransactions(response.data.data.data);
+      setPagination({
+        total: response.data.data.pagination.total,
+        pages: response.data.data.pagination.pages,
+        currentPage: Math.floor(filters.offset / filters.limit) + 1,
+      });
+    } catch (err) {
+      setError('Failed to fetch transactions');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+      offset: 0,
+    }));
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Date', 'Type', 'Amount', 'Status', 'Description'];
+    const rows = transactions.map((t) => [
+      new Date(t.transactionDate).toLocaleDateString(),
+      t.type,
+      `${t.amount} ${t.currency}`,
+      t.status,
+      t.description,
+    ]);
+
+    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'PROCESSING':
+        return 'bg-blue-100 text-blue-800';
+      case 'FAILED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'BUY':
+      case 'DEPOSIT':
+        return 'text-green-600';
+      case 'SELL':
+      case 'WITHDRAWAL':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  if (loading && transactions.length === 0) {
+    return <div className="text-center py-8">Loading transactions...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="bg-white p-4 rounded-lg shadow space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-lg">Filters</h3>
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+          >
+            Export CSV
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Type Filter */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Transaction Type</label>
+            <select
+              value={filters.type}
+              onChange={(e) => handleFilterChange('type', e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+            >
+              <option value="">All Types</option>
+              <option value="BUY">Buy</option>
+              <option value="SELL">Sell</option>
+              <option value="DEPOSIT">Deposit</option>
+              <option value="WITHDRAWAL">Withdrawal</option>
+              <option value="DIVIDEND">Dividend</option>
+              <option value="INTEREST">Interest</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+            >
+              <option value="">All Statuses</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="PENDING">Pending</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </div>
+
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Search</label>
+            <input
+              type="text"
+              placeholder="Search description..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
+
+      {/* Transactions Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Date</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Type</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Description</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold">Amount</th>
+              <th className="px-6 py-3 text-center text-sm font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map((transaction) => (
+              <tr key={transaction.id} className="border-b hover:bg-gray-50">
+                <td className="px-6 py-4 text-sm">
+                  {new Date(transaction.transactionDate).toLocaleDateString()}
+                </td>
+                <td className={`px-6 py-4 text-sm font-semibold ${getTypeColor(transaction.type)}`}>
+                  {transaction.type}
+                </td>
+                <td className="px-6 py-4 text-sm">{transaction.description}</td>
+                <td className="px-6 py-4 text-right font-medium">
+                  {transaction.type === 'SELL' || transaction.type === 'WITHDRAWAL' ? '-' : '+'}
+                  {parseFloat(transaction.amount.toString()).toFixed(2)} {transaction.currency}
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(transaction.status)}`}>
+                    {transaction.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {transactions.length === 0 && (
+          <div className="text-center py-8 text-gray-500">No transactions found</div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-600">
+          Page {pagination.currentPage} of {pagination.pages} (Total: {pagination.total})
+        </div>
+        <div className="space-x-2">
+          <button
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                offset: Math.max(0, prev.offset - prev.limit),
+              }))
+            }
+            disabled={pagination.currentPage === 1}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                offset: prev.offset + prev.limit,
+              }))
+            }
+            disabled={pagination.currentPage === pagination.pages}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
