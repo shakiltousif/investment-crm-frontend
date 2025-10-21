@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import axios from 'axios';
+import { api } from '@/lib/api';
 
 interface BankAccountFormProps {
   onSuccess?: () => void;
@@ -39,27 +39,16 @@ export default function BankAccountForm({
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const url = isEditing
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bank-accounts/${initialData.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bank-accounts`;
-
-      const method = isEditing ? 'PUT' : 'POST';
-
-      await axios({
-        method,
-        url,
-        data: formData,
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (isEditing && initialData?.id) {
+        await api.bankAccounts.update(initialData.id, formData);
+      } else {
+        await api.bankAccounts.create(formData);
+      }
 
       onSuccess?.();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error?.message || 'Failed to save bank account');
-      } else {
-        setError('An unexpected error occurred');
-      }
+    } catch (err: any) {
+      console.error('Bank account form error:', err);
+      setError(err.response?.data?.message || 'Failed to save bank account');
     } finally {
       setLoading(false);
     }

@@ -1,118 +1,50 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
 
 interface BankAccount {
   id: string;
   accountHolderName: string;
   accountNumber: string;
   bankName: string;
+  bankCode?: string;
   accountType: string;
   currency: string;
   balance: number;
   isVerified: boolean;
+  verifiedAt?: string;
   isPrimary: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface BankAccountListProps {
+  bankAccounts: BankAccount[];
   onEdit?: (account: BankAccount) => void;
   onDelete?: (accountId: string) => void;
+  onVerify?: (accountId: string) => void;
+  onSetPrimary?: (accountId: string) => void;
   onRefresh?: () => void;
 }
 
 export default function BankAccountList({
+  bankAccounts,
   onEdit,
   onDelete,
+  onVerify,
+  onSetPrimary,
   onRefresh,
 }: BankAccountListProps) {
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bank-accounts`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      setAccounts(response.data.data);
-    } catch (err) {
-      setError('Failed to load bank accounts');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (accountId: string) => {
-    if (!confirm('Are you sure you want to delete this account?')) return;
-
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bank-accounts/${accountId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      fetchAccounts();
-      onDelete?.(accountId);
-    } catch (err) {
-      setError('Failed to delete account');
-    }
-  };
-
-  const handleSetPrimary = async (accountId: string) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bank-accounts/${accountId}/set-primary`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      fetchAccounts();
-    } catch (err) {
-      setError('Failed to set primary account');
-    }
-  };
-
-  if (loading) {
+  if (bankAccounts.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading accounts...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p className="text-red-700">{error}</p>
-      </div>
-    );
-  }
-
-  if (accounts.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">No bank accounts yet</p>
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No bank accounts found</h3>
+        <p className="text-gray-600 mb-4">Add your first bank account to start managing your finances.</p>
         <button
           onClick={onRefresh}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
         >
-          Add First Account
+          Add Bank Account
         </button>
       </div>
     );
@@ -120,10 +52,12 @@ export default function BankAccountList({
 
   return (
     <div className="space-y-4">
-      {accounts.map((account) => (
+      {bankAccounts.map((account) => (
         <div
           key={account.id}
-          className="bg-white rounded-lg shadow p-6 border-l-4 border-indigo-600"
+          className={`bg-white rounded-lg shadow p-6 border-l-4 ${
+            account.isPrimary ? 'border-green-500' : 'border-indigo-600'
+          }`}
         >
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -136,9 +70,13 @@ export default function BankAccountList({
                   Primary
                 </span>
               )}
-              {account.isVerified && (
+              {account.isVerified ? (
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                   Verified
+                </span>
+              ) : (
+                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                  Pending Verification
                 </span>
               )}
             </div>
@@ -168,30 +106,49 @@ export default function BankAccountList({
           </div>
 
           <div className="flex gap-2">
-            {!account.isPrimary && (
+            {!account.isPrimary && onSetPrimary && (
               <button
-                onClick={() => handleSetPrimary(account.id)}
+                onClick={() => onSetPrimary(account.id)}
                 className="px-3 py-1 text-sm bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition"
               >
                 Set Primary
               </button>
             )}
-            <button
-              onClick={() => onEdit?.(account)}
-              className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(account.id)}
-              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
-            >
-              Delete
-            </button>
+            {!account.isVerified && onVerify && (
+              <button
+                onClick={() => onVerify(account.id)}
+                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition"
+              >
+                Verify Account
+              </button>
+            )}
+            {onEdit && (
+              <button
+                onClick={() => onEdit(account)}
+                className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition"
+              >
+                Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(account.id)}
+                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
+              >
+                Delete
+              </button>
+            )}
           </div>
+
+          {account.verifiedAt && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                Verified on: {new Date(account.verifiedAt).toLocaleDateString()}
+              </p>
+            </div>
+          )}
         </div>
       ))}
     </div>
   );
 }
-

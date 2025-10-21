@@ -1,243 +1,193 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import React from 'react';
 
-interface Investment {
+interface MarketplaceInvestment {
   id: string;
   name: string;
-  symbol?: string;
   type: string;
+  symbol?: string;
+  description?: string;
   currentPrice: number;
-  gainPercentage: number;
-  totalValue: number;
+  minimumInvestment: number;
+  maximumInvestment?: number;
+  currency: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  expectedReturn?: number;
+  maturityDate?: string;
+  isAvailable: boolean;
+  category: string;
+  issuer: string;
+  createdAt: string;
 }
 
 interface MarketplaceListProps {
-  onSelectInvestment?: (investment: Investment) => void;
-  onBuy?: (investment: Investment) => void;
+  investments: MarketplaceInvestment[];
+  onBuy?: (investment: MarketplaceInvestment) => void;
+  onRefresh?: () => void;
 }
 
-export default function MarketplaceList({ onSelectInvestment, onBuy }: MarketplaceListProps) {
-  const [investments, setInvestments] = useState<Investment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    type: '',
-    search: '',
-    sortBy: 'name',
-    limit: 20,
-    offset: 0,
-  });
-  const [pagination, setPagination] = useState({
-    total: 0,
-    pages: 0,
-    currentPage: 1,
-  });
-
-  useEffect(() => {
-    fetchInvestments();
-  }, [filters]);
-
-  const fetchInvestments = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams();
-      if (filters.type) params.append('type', filters.type);
-      if (filters.search) params.append('search', filters.search);
-      params.append('sortBy', filters.sortBy);
-      params.append('limit', filters.limit.toString());
-      params.append('offset', filters.offset.toString());
-
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/marketplace?${params}`,
-      );
-
-      setInvestments(response.data.data.data);
-      setPagination({
-        total: response.data.data.pagination.total,
-        pages: response.data.data.pagination.pages,
-        currentPage: Math.floor(filters.offset / filters.limit) + 1,
-      });
-    } catch (err) {
-      setError('Failed to fetch investments');
-      console.error(err);
-    } finally {
-      setLoading(false);
+export default function MarketplaceList({
+  investments,
+  onBuy,
+  onRefresh,
+}: MarketplaceListProps) {
+  const getRiskLevelColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'LOW':
+        return 'text-green-600 bg-green-100';
+      case 'MEDIUM':
+        return 'text-yellow-600 bg-yellow-100';
+      case 'HIGH':
+        return 'text-red-600 bg-red-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-      offset: 0, // Reset to first page
-    }));
-  };
-
-  const handleNextPage = () => {
-    if (pagination.currentPage < pagination.pages) {
-      setFilters((prev) => ({
-        ...prev,
-        offset: prev.offset + prev.limit,
-      }));
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'STOCK':
+        return 'text-blue-600 bg-blue-100';
+      case 'BOND':
+        return 'text-purple-600 bg-purple-100';
+      case 'TERM_DEPOSIT':
+        return 'text-green-600 bg-green-100';
+      case 'PRIVATE_EQUITY':
+        return 'text-orange-600 bg-orange-100';
+      case 'MUTUAL_FUND':
+        return 'text-indigo-600 bg-indigo-100';
+      case 'ETF':
+        return 'text-cyan-600 bg-cyan-100';
+      case 'CRYPTOCURRENCY':
+        return 'text-yellow-600 bg-yellow-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
-  const handlePrevPage = () => {
-    if (pagination.currentPage > 1) {
-      setFilters((prev) => ({
-        ...prev,
-        offset: Math.max(0, prev.offset - prev.limit),
-      }));
-    }
-  };
-
-  if (loading && investments.length === 0) {
-    return <div className="text-center py-8">Loading investments...</div>;
+  if (investments.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No investments available</h3>
+        <p className="text-gray-600 mb-4">Check back later for new investment opportunities.</p>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          >
+            Refresh
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow space-y-4">
-        <h3 className="font-semibold text-lg">Filters</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Type Filter */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Investment Type</label>
-            <select
-              value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            >
-              <option value="">All Types</option>
-              <option value="STOCK">Stock</option>
-              <option value="BOND">Bond</option>
-              <option value="TERM_DEPOSIT">Term Deposit</option>
-              <option value="MUTUAL_FUND">Mutual Fund</option>
-              <option value="ETF">ETF</option>
-              <option value="CRYPTOCURRENCY">Cryptocurrency</option>
-            </select>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {investments.map((investment) => (
+        <div
+          key={investment.id}
+          className={`bg-white rounded-lg shadow p-6 border-l-4 ${
+            investment.isAvailable ? 'border-green-500' : 'border-gray-300'
+          }`}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">{investment.name}</h3>
+              {investment.symbol && (
+                <p className="text-sm text-gray-600 mb-2">{investment.symbol}</p>
+              )}
+              <p className="text-sm text-gray-500">{investment.issuer}</p>
+            </div>
+            <div className="flex gap-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(investment.type)}`}>
+                {investment.type.replace('_', ' ')}
+              </span>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskLevelColor(investment.riskLevel)}`}>
+                {investment.riskLevel} Risk
+              </span>
+            </div>
           </div>
 
-          {/* Search */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Search</label>
-            <input
-              type="text"
-              placeholder="Search by name or symbol..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
+          {investment.description && (
+            <p className="text-gray-600 text-sm mb-4 line-clamp-2">{investment.description}</p>
+          )}
+
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between">
+              <span className="text-gray-600 text-sm">Current Price:</span>
+              <span className="font-medium">
+                {investment.currency} ${investment.currentPrice.toLocaleString()}
+              </span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-600 text-sm">Min Investment:</span>
+              <span className="font-medium">
+                {investment.currency} ${investment.minimumInvestment.toLocaleString()}
+              </span>
+            </div>
+            
+            {investment.maximumInvestment && (
+              <div className="flex justify-between">
+                <span className="text-gray-600 text-sm">Max Investment:</span>
+                <span className="font-medium">
+                  {investment.currency} ${investment.maximumInvestment.toLocaleString()}
+                </span>
+              </div>
+            )}
+            
+            {investment.expectedReturn && (
+              <div className="flex justify-between">
+                <span className="text-gray-600 text-sm">Expected Return:</span>
+                <span className="font-medium text-green-600">
+                  {investment.expectedReturn.toFixed(2)}%
+                </span>
+              </div>
+            )}
+            
+            {investment.maturityDate && (
+              <div className="flex justify-between">
+                <span className="text-gray-600 text-sm">Maturity Date:</span>
+                <span className="font-medium">
+                  {new Date(investment.maturityDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Sort */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Sort By</label>
-            <select
-              value={filters.sortBy}
-              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            >
-              <option value="name">Name</option>
-              <option value="price">Price</option>
-              <option value="return">Return</option>
-              <option value="popularity">Popularity</option>
-            </select>
+          <div className="flex gap-2">
+            {investment.isAvailable ? (
+              <>
+                <button
+                  onClick={() => onBuy?.(investment)}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                >
+                  Invest Now
+                </button>
+                <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                  Details
+                </button>
+              </>
+            ) : (
+              <button
+                disabled
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+              >
+                Not Available
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>Category: {investment.category}</span>
+              <span>Added: {new Date(investment.createdAt).toLocaleDateString()}</span>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Error Message */}
-      {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
-
-      {/* Investments Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Type</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold">Price</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold">Return %</th>
-              <th className="px-6 py-3 text-center text-sm font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {investments.map((investment) => (
-              <tr key={investment.id} className="border-b hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div>
-                    <p className="font-medium">{investment.name}</p>
-                    {investment.symbol && <p className="text-sm text-gray-500">{investment.symbol}</p>}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm">{investment.type}</td>
-                <td className="px-6 py-4 text-right font-medium">
-                  ${parseFloat(investment.currentPrice.toString()).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <span
-                    className={`font-medium ${
-                      investment.gainPercentage >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {investment.gainPercentage >= 0 ? '+' : ''}
-                    {parseFloat(investment.gainPercentage.toString()).toFixed(2)}%
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-center space-x-2">
-                  <button
-                    onClick={() => onSelectInvestment?.(investment)}
-                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => onBuy?.(investment)}
-                    className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-                  >
-                    Buy
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {investments.length === 0 && (
-          <div className="text-center py-8 text-gray-500">No investments found</div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          Page {pagination.currentPage} of {pagination.pages} (Total: {pagination.total})
-        </div>
-        <div className="space-x-2">
-          <button
-            onClick={handlePrevPage}
-            disabled={pagination.currentPage === 1}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={handleNextPage}
-            disabled={pagination.currentPage === pagination.pages}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
-

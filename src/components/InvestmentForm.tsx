@@ -1,6 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { z } from 'zod';
+import { Form, FormField, SelectField } from '@/components/ui/Form';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { TrendingUp, TrendingDown, DollarSign, Calendar, Percent } from 'lucide-react';
 import axios from 'axios';
 
 interface InvestmentFormProps {
@@ -9,18 +17,32 @@ interface InvestmentFormProps {
   onCancel?: () => void;
   initialData?: any;
   isEditing?: boolean;
+  className?: string;
 }
 
 const INVESTMENT_TYPES = [
-  'STOCK',
-  'BOND',
-  'TERM_DEPOSIT',
-  'PRIVATE_EQUITY',
-  'MUTUAL_FUND',
-  'ETF',
-  'CRYPTOCURRENCY',
-  'OTHER',
+  { value: 'STOCK', label: 'Stock' },
+  { value: 'BOND', label: 'Bond' },
+  { value: 'TERM_DEPOSIT', label: 'Term Deposit' },
+  { value: 'PRIVATE_EQUITY', label: 'Private Equity' },
+  { value: 'MUTUAL_FUND', label: 'Mutual Fund' },
+  { value: 'ETF', label: 'ETF' },
+  { value: 'CRYPTOCURRENCY', label: 'Cryptocurrency' },
+  { value: 'OTHER', label: 'Other' },
 ];
+
+const investmentSchema = z.object({
+  portfolioId: z.string(),
+  type: z.string().min(1, 'Investment type is required'),
+  name: z.string().min(1, 'Investment name is required'),
+  symbol: z.string().optional(),
+  quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
+  purchasePrice: z.number().min(0.01, 'Purchase price must be greater than 0'),
+  currentPrice: z.number().min(0.01, 'Current price must be greater than 0'),
+  purchaseDate: z.string().min(1, 'Purchase date is required'),
+  maturityDate: z.string().optional(),
+  interestRate: z.number().optional(),
+});
 
 export default function InvestmentForm({
   portfolioId,
@@ -28,39 +50,41 @@ export default function InvestmentForm({
   onCancel,
   initialData,
   isEditing = false,
+  className,
 }: InvestmentFormProps) {
-  const [formData, setFormData] = useState({
-    portfolioId,
-    type: initialData?.type || 'STOCK',
-    name: initialData?.name || '',
-    symbol: initialData?.symbol || '',
-    quantity: initialData?.quantity || '',
-    purchasePrice: initialData?.purchasePrice || '',
-    currentPrice: initialData?.currentPrice || '',
-    purchaseDate: initialData?.purchaseDate?.split('T')[0] || '',
-    maturityDate: initialData?.maturityDate?.split('T')[0] || '',
-    interestRate: initialData?.interestRate || '',
-  });
-
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
   const [totalInvested, setTotalInvested] = useState(0);
+  const [gainLoss, setGainLoss] = useState(0);
+  const [gainPercentage, setGainPercentage] = useState(0);
 
-  useEffect(() => {
-    const invested = parseFloat(formData.quantity || 0) * parseFloat(formData.purchasePrice || 0);
-    const value = parseFloat(formData.quantity || 0) * parseFloat(formData.currentPrice || 0);
-    setTotalInvested(invested);
-    setTotalValue(value);
-  }, [formData.quantity, formData.purchasePrice, formData.currentPrice]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const defaultValues = {
+    portfolioId,
+    type: initialData?.type || 'STOCK',
+    name: initialData?.name || '',
+    symbol: initialData?.symbol || '',
+    quantity: initialData?.quantity || 0,
+    purchasePrice: initialData?.purchasePrice || 0,
+    currentPrice: initialData?.currentPrice || 0,
+    purchaseDate: initialData?.purchaseDate?.split('T')[0] || '',
+    maturityDate: initialData?.maturityDate?.split('T')[0] || '',
+    interestRate: initialData?.interestRate || 0,
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const calculateValues = (quantity: number, purchasePrice: number, currentPrice: number) => {
+    const invested = quantity * purchasePrice;
+    const value = quantity * currentPrice;
+    const gain = value - invested;
+    const percentage = invested > 0 ? (gain / invested) * 100 : 0;
+    
+    setTotalInvested(invested);
+    setTotalValue(value);
+    setGainLoss(gain);
+    setGainPercentage(percentage);
+  };
+
+  const handleSubmit = async (data: z.infer<typeof investmentSchema>) => {
     setError('');
     setLoading(true);
 
@@ -76,11 +100,8 @@ export default function InvestmentForm({
         method,
         url,
         data: {
-          ...formData,
-          quantity: parseFloat(formData.quantity),
-          purchasePrice: parseFloat(formData.purchasePrice),
-          currentPrice: parseFloat(formData.currentPrice),
-          interestRate: formData.interestRate ? parseFloat(formData.interestRate) : undefined,
+          ...data,
+          interestRate: data.interestRate || undefined,
         },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -98,184 +119,201 @@ export default function InvestmentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
+    <div className={cn("space-y-6", className)}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {isEditing ? 'Edit Investment' : 'Add New Investment'}
+          </CardTitle>
+          <CardDescription>
+            {isEditing 
+              ? 'Update your investment details below.' 
+              : 'Fill in the details to add a new investment to your portfolio.'
+            }
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Investment Type
-          </label>
-          <select
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+          <Form
+            schema={investmentSchema}
+            onSubmit={handleSubmit}
+            defaultValues={defaultValues}
+            loading={loading}
+            className="space-y-6"
           >
-            {INVESTMENT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </div>
+            {/* Investment Type and Name */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SelectField
+                label="Investment Type"
+                name="type"
+                options={INVESTMENT_TYPES}
+                required
+                control={undefined as any}
+              />
+              
+              <FormField
+                label="Investment Name"
+                name="name"
+                type="text"
+                placeholder="Apple Inc."
+                required
+                control={undefined as any}
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Investment Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            placeholder="Apple Inc."
-          />
-        </div>
-      </div>
+            {/* Symbol */}
+            <FormField
+              label="Symbol (Optional)"
+              name="symbol"
+              type="text"
+              placeholder="AAPL"
+              control={undefined as any}
+            />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Symbol (Optional)
-        </label>
-        <input
-          type="text"
-          name="symbol"
-          value={formData.symbol}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-          placeholder="AAPL"
-        />
-      </div>
+            {/* Quantity, Purchase Price, Current Price */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                label="Quantity"
+                name="quantity"
+                type="number"
+                placeholder="100"
+                required
+                step={0.01}
+                control={undefined as any}
+              />
+              
+              <FormField
+                label="Purchase Price"
+                name="purchasePrice"
+                type="number"
+                placeholder="150.00"
+                required
+                step={0.01}
+                control={undefined as any}
+              />
+              
+              <FormField
+                label="Current Price"
+                name="currentPrice"
+                type="number"
+                placeholder="175.00"
+                required
+                step={0.01}
+                control={undefined as any}
+              />
+            </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Quantity
-          </label>
-          <input
-            type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleChange}
-            required
-            step="0.01"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            placeholder="100"
-          />
-        </div>
+            {/* Investment Summary */}
+            <Card className="bg-muted/50">
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <DollarSign className="h-4 w-4" />
+                      Total Invested
+                    </div>
+                    <div className="text-2xl font-bold">
+                      ${totalInvested.toLocaleString()}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <TrendingUp className="h-4 w-4" />
+                      Current Value
+                    </div>
+                    <div className="text-2xl font-bold">
+                      ${totalValue.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                
+                {(totalInvested > 0 || totalValue > 0) && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {gainLoss >= 0 ? (
+                          <TrendingUp className="h-4 w-4 text-success" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-destructive" />
+                        )}
+                        <span className="text-sm text-muted-foreground">Gain/Loss</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={gainLoss >= 0 ? 'success' : 'destructive'}
+                        >
+                          {gainLoss >= 0 ? '+' : ''}${gainLoss.toLocaleString()}
+                        </Badge>
+                        <Badge 
+                          variant={gainPercentage >= 0 ? 'success' : 'destructive'}
+                        >
+                          {gainPercentage >= 0 ? '+' : ''}{gainPercentage.toFixed(2)}%
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Purchase Price
-          </label>
-          <input
-            type="number"
-            name="purchasePrice"
-            value={formData.purchasePrice}
-            onChange={handleChange}
-            required
-            step="0.01"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            placeholder="150.00"
-          />
-        </div>
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                label="Purchase Date"
+                name="purchaseDate"
+                type="date"
+                required
+                control={undefined as any}
+              />
+              
+              <FormField
+                label="Maturity Date (Optional)"
+                name="maturityDate"
+                type="date"
+                control={undefined as any}
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Current Price
-          </label>
-          <input
-            type="number"
-            name="currentPrice"
-            value={formData.currentPrice}
-            onChange={handleChange}
-            required
-            step="0.01"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            placeholder="175.00"
-          />
-        </div>
-      </div>
+            {/* Interest Rate */}
+            <FormField
+              label="Interest Rate (Optional)"
+              name="interestRate"
+              type="number"
+              placeholder="5.5"
+              step={0.01}
+              control={undefined as any}
+            />
 
-      <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-        <div>
-          <p className="text-gray-600 text-sm">Total Invested</p>
-          <p className="text-lg font-bold text-gray-900">${totalInvested.toLocaleString()}</p>
-        </div>
-        <div>
-          <p className="text-gray-600 text-sm">Current Value</p>
-          <p className="text-lg font-bold text-gray-900">${totalValue.toLocaleString()}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Purchase Date
-          </label>
-          <input
-            type="date"
-            name="purchaseDate"
-            value={formData.purchaseDate}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Maturity Date (Optional)
-          </label>
-          <input
-            type="date"
-            name="maturityDate"
-            value={formData.maturityDate}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Interest Rate (Optional)
-        </label>
-        <input
-          type="number"
-          name="interestRate"
-          value={formData.interestRate}
-          onChange={handleChange}
-          step="0.01"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-          placeholder="5.5"
-        />
-      </div>
-
-      <div className="flex gap-4 pt-4">
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
-        >
-          {loading ? 'Saving...' : isEditing ? 'Update Investment' : 'Create Investment'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+            {/* Form Actions */}
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={loading}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? 'Saving...' : isEditing ? 'Update Investment' : 'Create Investment'}
+              </Button>
+            </div>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

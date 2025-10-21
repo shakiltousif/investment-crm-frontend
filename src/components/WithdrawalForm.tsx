@@ -1,23 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
+import { api } from '@/lib/api';
 
 interface BankAccount {
   id: string;
+  accountHolderName: string;
   accountNumber: string;
   bankName: string;
+  accountType: string;
   currency: string;
   balance: number;
+  isVerified: boolean;
+  isPrimary: boolean;
 }
 
 interface WithdrawalFormProps {
+  bankAccounts: BankAccount[];
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormProps) {
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: WithdrawalFormProps) {
   const [formData, setFormData] = useState({
     amount: '',
     currency: 'USD',
@@ -26,35 +30,7 @@ export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormPr
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [step, setStep] = useState<'form' | 'confirm' | 'success'>('form');
-
-  useEffect(() => {
-    fetchBankAccounts();
-  }, []);
-
-  const fetchBankAccounts = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/bank-accounts`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        },
-      );
-      setBankAccounts(response.data.data);
-      if (response.data.data.length > 0) {
-        setFormData((prev) => ({
-          ...prev,
-          bankAccountId: response.data.data[0].id,
-          currency: response.data.data[0].currency,
-        }));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -104,27 +80,19 @@ export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormPr
       setLoading(true);
       setError(null);
 
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/withdrawals`,
-        {
-          amount: parseFloat(formData.amount),
-          currency: formData.currency,
-          bankAccountId: formData.bankAccountId,
-          description: formData.description,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        },
-      );
+      await api.withdrawals.create({
+        amount: parseFloat(formData.amount),
+        currency: formData.currency,
+        bankAccountId: formData.bankAccountId,
+        description: formData.description,
+      });
 
-      setSuccess(true);
       setStep('success');
       setTimeout(() => {
         onSuccess?.();
       }, 2000);
     } catch (err: any) {
+      console.error('Withdrawal creation error:', err);
       setError(err.response?.data?.message || 'Failed to create withdrawal request');
       setStep('form');
     } finally {
@@ -137,14 +105,12 @@ export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormPr
   const balanceAfter = selectedAccount ? selectedAccount.balance - amount : 0;
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 max-w-md mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Withdraw Funds</h2>
-
+    <div className="space-y-4">
       {step === 'form' && (
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium mb-2">Amount</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
             <input
               type="number"
               name="amount"
@@ -153,22 +119,24 @@ export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormPr
               min="0"
               value={formData.amount}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded-lg"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
           {/* Bank Account */}
           <div>
-            <label className="block text-sm font-medium mb-2">Bank Account</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bank Account</label>
             <select
               value={formData.bankAccountId}
               onChange={handleAccountChange}
-              className="w-full px-3 py-2 border rounded-lg"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             >
               <option value="">Select an account</option>
               {bankAccounts.map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.bankName} - {account.accountNumber} (Balance: {account.currency}{' '}
+                  {account.bankName} - ****{account.accountNumber.slice(-4)} (Balance: {account.currency}{' '}
                   {parseFloat(account.balance.toString()).toFixed(2)})
                 </option>
               ))}
@@ -197,31 +165,35 @@ export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormPr
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-2">Description (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
             <input
               type="text"
               name="description"
               placeholder="e.g., Monthly withdrawal"
               value={formData.description}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded-lg"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
-          {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50"
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
             >
               Continue
             </button>
@@ -265,19 +237,23 @@ export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormPr
             </ul>
           </div>
 
-          {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-4 pt-4">
             <button
               onClick={() => setStep('form')}
-              className="flex-1 px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50"
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition"
             >
               Back
             </button>
             <button
               onClick={handleConfirm}
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
             >
               {loading ? 'Processing...' : 'Confirm Withdrawal'}
             </button>
@@ -287,7 +263,7 @@ export default function WithdrawalForm({ onSuccess, onCancel }: WithdrawalFormPr
 
       {step === 'success' && (
         <div className="text-center py-8">
-          <div className="text-4xl mb-4">✓</div>
+          <div className="text-4xl mb-4 text-green-600">✓</div>
           <p className="text-lg font-semibold text-green-600">Withdrawal Request Submitted!</p>
           <p className="text-gray-600 mt-2">Your withdrawal request has been submitted successfully.</p>
           <p className="text-sm text-gray-500 mt-4">You will receive a confirmation email shortly.</p>
