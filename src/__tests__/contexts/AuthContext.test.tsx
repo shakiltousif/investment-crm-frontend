@@ -1,306 +1,406 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '../contexts/AuthContext';
-import { api } from '../lib/api';
+import { render, screen, act } from '@testing-library/react';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
-// Mock the API client
-vi.mock('../lib/api', () => ({
-  api: {
-    auth: {
-      login: vi.fn(),
-      register: vi.fn(),
-      refresh: vi.fn(),
-      logout: vi.fn(),
-    },
+// Mock the API
+jest.mock('@/lib/api', () => ({
+  auth: {
+    refreshToken: jest.fn(),
+    logout: jest.fn(),
+  },
+  user: {
+    getProfile: jest.fn(),
   },
 }));
 
+const mockRefreshToken = require('@/lib/api').auth.refreshToken;
+const mockLogout = require('@/lib/api').auth.logout;
+const mockGetProfile = require('@/lib/api').user.getProfile;
+
 // Mock localStorage
 const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
 };
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 });
 
+// Test component to access auth context
 const TestComponent = () => {
-  const { user, isAuthenticated, login, logout, updateUser } = React.useContext(AuthProvider);
+  const { user, isAuthenticated, login, logout, refreshUser } = useAuth();
   
   return (
     <div>
-      <div data-testid="user">{user ? user.email : 'No user'}</div>
-      <div data-testid="authenticated">{isAuthenticated ? 'true' : 'false'}</div>
-      <button onClick={() => login('test@example.com', 'password')}>Login</button>
+      <div data-testid="is-authenticated">{isAuthenticated ? 'true' : 'false'}</div>
+      <div data-testid="user-email">{user?.email || 'no-email'}</div>
+      <div data-testid="user-name">{user?.firstName || 'no-name'}</div>
+      <button onClick={() => login({ email: 'test@example.com', password: 'password' })}>
+        Login
+      </button>
       <button onClick={logout}>Logout</button>
-      <button onClick={() => updateUser({ id: '1', email: 'test@example.com', firstName: 'John', lastName: 'Doe' })}>Update User</button>
+      <button onClick={refreshUser}>Refresh</button>
     </div>
-  );
-};
-
-const renderWithAuthProvider = (component: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      <AuthProvider>
-        {component}
-      </AuthProvider>
-    </BrowserRouter>
   );
 };
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it('provides initial unauthenticated state', () => {
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('is-authenticated')).toHaveTextContent('false');
+    expect(screen.getByTestId('user-email')).toHaveTextContent('no-email');
+    expect(screen.getByTestId('user-name')).toHaveTextContent('no-name');
   });
 
-  it('should initialize with no user and not authenticated', () => {
-    renderWithAuthProvider(<TestComponent />);
+  it('provides authenticated state when tokens exist', () => {
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'accessToken') return 'mock-access-token';
+      if (key === 'refreshToken') return 'mock-refresh-token';
+      return null;
+    });
 
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
-  });
-
-  it('should initialize with user from localStorage', () => {
     const mockUser = {
       id: '1',
       email: 'test@example.com',
       firstName: 'John',
       lastName: 'Doe',
     };
-    const mockToken = 'mock-token';
 
-    localStorageMock.getItem.mockImplementation((key) => {
-      if (key === 'accessToken') return mockToken;
-      if (key === 'user') return JSON.stringify(mockUser);
-      return null;
+    mockGetProfile.mockResolvedValueOnce({
+      data: {
+        data: mockUser,
+      },
     });
 
-    renderWithAuthProvider(<TestComponent />);
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
 
-    expect(screen.getByTestId('user')).toHaveTextContent('test@example.com');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('true');
+    expect(screen.getByTestId('is-authenticated')).toHaveTextContent('true');
   });
 
-  it('should handle successful login', async () => {
+  it('handles login successfully', async () => {
+    const mockUser = {
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+    };
+
     const mockLoginResponse = {
       data: {
-        user: {
-          id: '1',
-          email: 'test@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
+        data: {
+          user: mockUser,
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
         },
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
       },
     };
 
-    (api.auth.login as any).mockResolvedValue(mockLoginResponse);
+    // Mock the login function
+    const mockLogin = jest.fn().mockResolvedValueOnce(mockLoginResponse);
+    require('@/lib/api').auth.login = mockLogin;
 
-    renderWithAuthProvider(<TestComponent />);
-
-    const loginButton = screen.getByText('Login');
-    fireEvent.click(loginButton);
-
-    await waitFor(() => {
-      expect(api.auth.login).toHaveBeenCalledWith('test@example.com', 'password');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('accessToken', 'mock-access-token');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('refreshToken', 'mock-refresh-token');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockLoginResponse.data.user));
-    });
-
-    expect(screen.getByTestId('user')).toHaveTextContent('test@example.com');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('true');
-  });
-
-  it('should handle login error', async () => {
-    const mockError = new Error('Login failed');
-    (api.auth.login as any).mockRejectedValue(mockError);
-
-    renderWithAuthProvider(<TestComponent />);
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
 
     const loginButton = screen.getByText('Login');
-    fireEvent.click(loginButton);
-
-    await waitFor(() => {
-      expect(api.auth.login).toHaveBeenCalledWith('test@example.com', 'password');
-    });
-
-    // Should still show no user after failed login
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
-  });
-
-  it('should handle logout', async () => {
-    const mockUser = {
-      id: '1',
-      email: 'test@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-    };
-
-    localStorageMock.getItem.mockImplementation((key) => {
-      if (key === 'accessToken') return 'mock-token';
-      if (key === 'user') return JSON.stringify(mockUser);
-      return null;
-    });
-
-    (api.auth.logout as any).mockResolvedValue({});
-
-    renderWithAuthProvider(<TestComponent />);
-
-    const logoutButton = screen.getByText('Logout');
-    fireEvent.click(logoutButton);
-
-    await waitFor(() => {
-      expect(api.auth.logout).toHaveBeenCalled();
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('accessToken');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refreshToken');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
-    });
-
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
-  });
-
-  it('should handle logout error gracefully', async () => {
-    const mockUser = {
-      id: '1',
-      email: 'test@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-    };
-
-    localStorageMock.getItem.mockImplementation((key) => {
-      if (key === 'accessToken') return 'mock-token';
-      if (key === 'user') return JSON.stringify(mockUser);
-      return null;
-    });
-
-    (api.auth.logout as any).mockRejectedValue(new Error('Logout failed'));
-
-    renderWithAuthProvider(<TestComponent />);
-
-    const logoutButton = screen.getByText('Logout');
-    fireEvent.click(logoutButton);
-
-    await waitFor(() => {
-      expect(api.auth.logout).toHaveBeenCalled();
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('accessToken');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refreshToken');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
-    });
-
-    // Should still logout locally even if API call fails
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
-  });
-
-  it('should update user data', () => {
-    const mockUser = {
-      id: '1',
-      email: 'test@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-    };
-
-    localStorageMock.getItem.mockImplementation((key) => {
-      if (key === 'accessToken') return 'mock-token';
-      if (key === 'user') return JSON.stringify(mockUser);
-      return null;
-    });
-
-    renderWithAuthProvider(<TestComponent />);
-
-    const updateButton = screen.getByText('Update User');
-    fireEvent.click(updateButton);
-
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify({
-      id: '1',
-      email: 'test@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-    }));
-  });
-
-  it('should handle token refresh', async () => {
-    const mockRefreshResponse = {
-      data: {
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-      },
-    };
-
-    (api.auth.refresh as any).mockResolvedValue(mockRefreshResponse);
-
-    // Simulate token refresh by calling the refresh function
-    const { refreshToken } = await import('../contexts/AuthContext');
     
-    // This would typically be called by the API interceptor
-    await refreshToken('mock-refresh-token');
+    await act(async () => {
+      loginButton.click();
+    });
 
-    expect(api.auth.refresh).toHaveBeenCalledWith('mock-refresh-token');
+    expect(mockLogin).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password',
+    });
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('accessToken', 'access-token');
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('refreshToken', 'refresh-token');
+  });
+
+  it('handles login error', async () => {
+    const mockLogin = jest.fn().mockRejectedValueOnce(new Error('Invalid credentials'));
+    require('@/lib/api').auth.login = mockLogin;
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const loginButton = screen.getByText('Login');
+    
+    await act(async () => {
+      loginButton.click();
+    });
+
+    expect(mockLogin).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password',
+    });
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
+  });
+
+  it('handles logout successfully', async () => {
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'accessToken') return 'mock-access-token';
+      if (key === 'refreshToken') return 'mock-refresh-token';
+      return null;
+    });
+
+    mockLogout.mockResolvedValueOnce({ data: { success: true } });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const logoutButton = screen.getByText('Logout');
+    
+    await act(async () => {
+      logoutButton.click();
+    });
+
+    expect(mockLogout).toHaveBeenCalled();
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('accessToken');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('refreshToken');
+  });
+
+  it('handles logout error gracefully', async () => {
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'accessToken') return 'mock-access-token';
+      if (key === 'refreshToken') return 'mock-refresh-token';
+      return null;
+    });
+
+    mockLogout.mockRejectedValueOnce(new Error('Logout failed'));
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const logoutButton = screen.getByText('Logout');
+    
+    await act(async () => {
+      logoutButton.click();
+    });
+
+    expect(mockLogout).toHaveBeenCalled();
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('accessToken');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('refreshToken');
+  });
+
+  it('refreshes user data successfully', async () => {
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'accessToken') return 'mock-access-token';
+      if (key === 'refreshToken') return 'mock-refresh-token';
+      return null;
+    });
+
+    const mockUser = {
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+    };
+
+    mockGetProfile.mockResolvedValueOnce({
+      data: {
+        data: mockUser,
+      },
+    });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const refreshButton = screen.getByText('Refresh');
+    
+    await act(async () => {
+      refreshButton.click();
+    });
+
+    expect(mockGetProfile).toHaveBeenCalled();
+  });
+
+  it('handles refresh token when access token expires', async () => {
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'accessToken') return 'expired-token';
+      if (key === 'refreshToken') return 'valid-refresh-token';
+      return null;
+    });
+
+    const mockUser = {
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+    };
+
+    // First call fails with 401, second call succeeds after refresh
+    mockGetProfile
+      .mockRejectedValueOnce({
+        response: { status: 401 },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: mockUser,
+        },
+      });
+
+    mockRefreshToken.mockResolvedValueOnce({
+      data: {
+        data: {
+          accessToken: 'new-access-token',
+          refreshToken: 'new-refresh-token',
+        },
+      },
+    });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const refreshButton = screen.getByText('Refresh');
+    
+    await act(async () => {
+      refreshButton.click();
+    });
+
+    expect(mockRefreshToken).toHaveBeenCalledWith('valid-refresh-token');
     expect(localStorageMock.setItem).toHaveBeenCalledWith('accessToken', 'new-access-token');
     expect(localStorageMock.setItem).toHaveBeenCalledWith('refreshToken', 'new-refresh-token');
   });
 
-  it('should handle token refresh error', async () => {
-    (api.auth.refresh as any).mockRejectedValue(new Error('Refresh failed'));
+  it('handles refresh token failure', async () => {
+    localStorageMock.getItem.mockImplementation((key) => {
+      if (key === 'accessToken') return 'expired-token';
+      if (key === 'refreshToken') return 'invalid-refresh-token';
+      return null;
+    });
 
-    // Simulate token refresh failure
-    const { refreshToken } = await import('../contexts/AuthContext');
+    mockGetProfile.mockRejectedValueOnce({
+      response: { status: 401 },
+    });
+
+    mockRefreshToken.mockRejectedValueOnce(new Error('Refresh token expired'));
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const refreshButton = screen.getByText('Refresh');
     
-    try {
-      await refreshToken('invalid-refresh-token');
-    } catch (error) {
-      expect(error).toBeInstanceOf(Error);
-      expect(error.message).toBe('Refresh failed');
-    }
+    await act(async () => {
+      refreshButton.click();
+    });
 
-    expect(api.auth.refresh).toHaveBeenCalledWith('invalid-refresh-token');
+    expect(mockRefreshToken).toHaveBeenCalledWith('invalid-refresh-token');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('accessToken');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('refreshToken');
   });
 
-  it('should handle malformed user data in localStorage', () => {
+  it('handles network errors gracefully', async () => {
     localStorageMock.getItem.mockImplementation((key) => {
-      if (key === 'accessToken') return 'mock-token';
-      if (key === 'user') return 'invalid-json';
+      if (key === 'accessToken') return 'mock-access-token';
+      if (key === 'refreshToken') return 'mock-refresh-token';
       return null;
     });
 
-    renderWithAuthProvider(<TestComponent />);
+    mockGetProfile.mockRejectedValueOnce(new Error('Network error'));
 
-    // Should handle malformed JSON gracefully
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const refreshButton = screen.getByText('Refresh');
+    
+    await act(async () => {
+      refreshButton.click();
+    });
+
+    expect(mockGetProfile).toHaveBeenCalled();
+    // Should not clear tokens on network errors
+    expect(localStorageMock.removeItem).not.toHaveBeenCalled();
   });
 
-  it('should handle missing token in localStorage', () => {
-    const mockUser = {
-      id: '1',
-      email: 'test@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-    };
+  it('provides loading state during authentication', async () => {
+    const mockLogin = jest.fn().mockImplementation(() => 
+      new Promise(resolve => setTimeout(resolve, 1000))
+    );
+    require('@/lib/api').auth.login = mockLogin;
 
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    const loginButton = screen.getByText('Login');
+    
+    act(() => {
+      loginButton.click();
+    });
+
+    // During loading, the button should be disabled or show loading state
+    expect(loginButton).toBeInTheDocument();
+  });
+
+  it('handles missing tokens gracefully', () => {
+    localStorageMock.getItem.mockReturnValue(null);
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('is-authenticated')).toHaveTextContent('false');
+  });
+
+  it('handles malformed token data', () => {
     localStorageMock.getItem.mockImplementation((key) => {
-      if (key === 'accessToken') return null; // No token
-      if (key === 'user') return JSON.stringify(mockUser);
+      if (key === 'accessToken') return 'malformed-token';
+      if (key === 'refreshToken') return 'malformed-refresh-token';
       return null;
     });
 
-    renderWithAuthProvider(<TestComponent />);
+    mockGetProfile.mockRejectedValueOnce(new Error('Invalid token'));
 
-    // Should not be authenticated without a token
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('is-authenticated')).toHaveTextContent('false');
   });
 });

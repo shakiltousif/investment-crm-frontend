@@ -25,6 +25,7 @@ interface MarketplaceListProps {
   investments: MarketplaceInvestment[];
   onBuy?: (investment: MarketplaceInvestment) => void;
   onEdit?: (investment: MarketplaceInvestment) => void;
+  onDetails?: (investment: MarketplaceInvestment) => void;
   onRefresh?: () => void;
   liveQuotes?: Map<string, any>;
 }
@@ -33,6 +34,7 @@ export default function MarketplaceList({
   investments,
   onBuy,
   onEdit,
+  onDetails,
   onRefresh,
   liveQuotes = new Map(),
 }: MarketplaceListProps) {
@@ -188,7 +190,10 @@ export default function MarketplaceList({
                 >
                   Edit
                 </button>
-                <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                <button 
+                  onClick={() => onDetails?.(investment)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                >
                   Details
                 </button>
               </>

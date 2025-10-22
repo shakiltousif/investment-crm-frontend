@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import MarketplaceList from '@/components/MarketplaceList';
 import BuyInvestmentModal from '@/components/BuyInvestmentModal';
 import AddEditInvestmentModal from '@/components/AddEditInvestmentModal';
+import InvestmentDetailsModal from '@/components/InvestmentDetailsModal';
 
 interface MarketplaceInvestment {
   id: string;
@@ -34,8 +35,10 @@ export default function MarketplacePage() {
   const [error, setError] = useState('');
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [showAddEditModal, setShowAddEditModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedInvestment, setSelectedInvestment] = useState<MarketplaceInvestment | null>(null);
   const [editingItem, setEditingItem] = useState<MarketplaceInvestment | null>(null);
+  const [detailsItem, setDetailsItem] = useState<MarketplaceInvestment | null>(null);
   const [liveQuotes, setLiveQuotes] = useState<Map<string, any>>(new Map());
   const [filters, setFilters] = useState({
     type: '',
@@ -182,6 +185,11 @@ export default function MarketplacePage() {
     setShowAddEditModal(true);
   };
 
+  const handleDetailsInvestment = (item: MarketplaceInvestment) => {
+    setDetailsItem(item);
+    setShowDetailsModal(true);
+  };
+
   const handleAddEditModalClose = () => {
     setShowAddEditModal(false);
     setEditingItem(null);
@@ -190,6 +198,11 @@ export default function MarketplacePage() {
   const handleAddEditModalSuccess = () => {
     handleAddEditModalClose();
     fetchMarketplaceInvestments();
+  };
+
+  const handleDetailsModalClose = () => {
+    setShowDetailsModal(false);
+    setDetailsItem(null);
   };
 
   const fetchLiveQuotes = async () => {
@@ -390,13 +403,14 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      <MarketplaceList
-        investments={investments}
-        onBuy={handleBuyInvestment}
-        onEdit={handleEditInvestment}
-        onRefresh={fetchMarketplaceInvestments}
-        liveQuotes={liveQuotes}
-      />
+        <MarketplaceList
+          investments={investments}
+          onBuy={handleBuyInvestment}
+          onEdit={handleEditInvestment}
+          onDetails={handleDetailsInvestment}
+          onRefresh={fetchMarketplaceInvestments}
+          liveQuotes={liveQuotes}
+        />
 
       {/* Buy Investment Modal */}
       {showBuyModal && selectedInvestment && (
@@ -416,6 +430,16 @@ export default function MarketplacePage() {
           isOpen={showAddEditModal}
           onClose={handleAddEditModalClose}
           onSuccess={handleAddEditModalSuccess}
+        />
+      )}
+
+      {/* Investment Details Modal */}
+      {showDetailsModal && detailsItem && (
+        <InvestmentDetailsModal
+          investment={detailsItem}
+          isOpen={showDetailsModal}
+          onClose={handleDetailsModalClose}
+          liveQuotes={liveQuotes}
         />
       )}
     </div>

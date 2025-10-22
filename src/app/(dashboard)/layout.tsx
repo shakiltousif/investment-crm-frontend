@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function DashboardLayout({
   children,
@@ -51,7 +52,15 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 w-64 h-screen bg-gray-900 text-white p-6 overflow-y-auto hidden md:block">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold">Investment CRM</h1>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo.jpeg"
+              alt="Quintet Private Bank"
+              width={60}
+              height={60}
+              className="object-contain"
+            />
+          </div>
         </div>
 
         <nav className="space-y-2">
@@ -105,7 +114,15 @@ export default function DashboardLayout({
 
       {/* Mobile menu button */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-gray-900 text-white p-4 flex justify-between items-center z-50">
-        <h1 className="text-xl font-bold">Investment CRM</h1>
+        <div className="flex items-center">
+          <Image
+            src="/logo.jpeg"
+            alt="Quintet Private Bank"
+            width={40}
+            height={40}
+            className="object-contain"
+          />
+        </div>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="text-2xl"
