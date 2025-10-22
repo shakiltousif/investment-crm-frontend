@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ apiClient.interceptors.response.use(
         }
 
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/refresh-token`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/refresh-token`,
           { refreshToken }
         );
 
@@ -160,6 +160,21 @@ export const api = {
   marketplace: {
     getAvailable: (params?: any) => apiClient.get('/api/marketplace', { params }),
     getById: (id: string) => apiClient.get(`/api/marketplace/${id}`),
+    // CRUD operations for marketplace items
+    createItem: (data: any) => apiClient.post('/api/marketplace/items', data),
+    updateItem: (id: string, data: any) => apiClient.put(`/api/marketplace/items/${id}`, data),
+    deleteItem: (id: string) => apiClient.delete(`/api/marketplace/items/${id}`),
+    getItem: (id: string) => apiClient.get(`/api/marketplace/items/${id}`),
+    updatePrices: () => apiClient.post('/api/marketplace/update-prices'),
+  },
+
+  // Quotes endpoints
+  quotes: {
+    getQuote: (symbol: string) => apiClient.get(`/api/quotes/${symbol}`),
+    getQuotes: (symbols: string[]) => apiClient.post('/api/quotes/batch', { symbols }),
+    searchSymbols: (query: string) => apiClient.get(`/api/quotes/search/${query}`),
+    getCacheStats: () => apiClient.get('/api/quotes/cache/stats'),
+    clearCache: () => apiClient.delete('/api/quotes/cache'),
   },
 
   // Deposit endpoints

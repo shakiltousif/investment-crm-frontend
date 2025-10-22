@@ -285,14 +285,12 @@ export function InvestmentTable({
   investments, 
   onBuy, 
   onSell, 
-  onEdit, 
   onDelete,
   loading = false 
 }: {
   investments: any[];
   onBuy?: (investment: any) => void;
   onSell?: (investment: any) => void;
-  onEdit?: (investment: any) => void;
   onDelete?: (investment: any) => void;
   loading?: boolean;
 }) {
@@ -354,7 +352,7 @@ export function InvestmentTable({
             "text-sm",
             row.gainPercentage >= 0 ? "text-success" : "text-destructive"
           )}>
-            {row.gainPercentage.toFixed(2)}%
+            {Number(row.gainPercentage).toFixed(2)}%
           </span>
         </div>
       ),
@@ -372,11 +370,6 @@ export function InvestmentTable({
           {onSell && (
             <Button size="sm" variant="outline" onClick={() => onSell(row)}>
               Sell
-            </Button>
-          )}
-          {onEdit && (
-            <Button size="sm" variant="ghost" onClick={() => onEdit(row)}>
-              Edit
             </Button>
           )}
           {onDelete && (

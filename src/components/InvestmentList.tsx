@@ -41,10 +41,6 @@ export default function InvestmentList({
   loading = false,
   className,
 }: InvestmentListProps) {
-  const handleEdit = async (investment: Investment) => {
-    // Edit functionality would be implemented here
-    console.log('Edit investment:', investment);
-  };
 
   const handleDelete = async (investmentId: string) => {
     if (!confirm('Are you sure you want to delete this investment?')) {
@@ -113,7 +109,6 @@ export default function InvestmentList({
         investments={investments}
         onBuy={onBuy}
         onSell={onSell}
-        onEdit={handleEdit}
         onDelete={(investment) => handleDelete(investment.id)}
         loading={loading}
       />

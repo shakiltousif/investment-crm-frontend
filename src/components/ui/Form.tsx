@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 interface FormFieldProps {
   label: string;
   name: string;
-  type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'textarea';
+  type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'textarea' | 'checkbox';
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -74,6 +74,22 @@ export function FormField({
             step={step}
             className={cn(baseClasses, className)}
           />
+        );
+      case 'checkbox':
+        return (
+          <div className="flex items-center space-x-2">
+            <input
+              {...field}
+              type="checkbox"
+              checked={field.value || false}
+              disabled={disabled}
+              className={cn(
+                "h-4 w-4 rounded border border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                error && "border-destructive"
+              )}
+            />
+            <span className="text-sm text-gray-600">{label}</span>
+          </div>
         );
       default:
         return (

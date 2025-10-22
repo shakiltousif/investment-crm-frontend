@@ -254,7 +254,7 @@ export default function InvestmentForm({
                         <Badge 
                           variant={gainPercentage >= 0 ? 'success' : 'destructive'}
                         >
-                          {gainPercentage >= 0 ? '+' : ''}{gainPercentage.toFixed(2)}%
+                          {gainPercentage >= 0 ? '+' : ''}{Number(gainPercentage).toFixed(2)}%
                         </Badge>
                       </div>
                     </div>

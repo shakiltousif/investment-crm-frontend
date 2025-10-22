@@ -22,76 +22,37 @@ interface Transaction {
 }
 
 interface TransactionHistoryTableProps {
+  transactions?: Transaction[];
+  loading?: boolean;
+  error?: string;
   portfolioId?: string;
   onRefresh?: () => void;
 }
 
 export default function TransactionHistoryTable({
+  transactions = [],
+  loading = false,
+  error = null,
   portfolioId,
   onRefresh,
 }: TransactionHistoryTableProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    type: '',
-    status: '',
-    search: '',
-    limit: 20,
-    offset: 0,
-  });
   const [pagination, setPagination] = useState({
     total: 0,
     pages: 0,
     currentPage: 1,
   });
 
+  // Calculate pagination from transactions data
   useEffect(() => {
-    fetchTransactions();
-  }, [filters, portfolioId]);
-
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams();
-      if (filters.type) params.append('type', filters.type);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.search) params.append('search', filters.search);
-      params.append('limit', filters.limit.toString());
-      params.append('offset', filters.offset.toString());
-
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/transactions?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        },
-      );
-
-      setTransactions(response.data.data.data);
+    if (transactions.length > 0) {
       setPagination({
-        total: response.data.data.pagination.total,
-        pages: response.data.data.pagination.pages,
-        currentPage: Math.floor(filters.offset / filters.limit) + 1,
+        total: transactions.length,
+        pages: Math.ceil(transactions.length / 20),
+        currentPage: 1,
       });
-    } catch (err) {
-      setError('Failed to fetch transactions');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [transactions]);
 
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-      offset: 0,
-    }));
-  };
 
   const handleExportCSV = () => {
     const headers = ['Date', 'Type', 'Amount', 'Status', 'Description'];
@@ -146,67 +107,6 @@ export default function TransactionHistoryTable({
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="font-semibold text-lg">Filters</h3>
-          <button
-            onClick={handleExportCSV}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-          >
-            Export CSV
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Type Filter */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Transaction Type</label>
-            <select
-              value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            >
-              <option value="">All Types</option>
-              <option value="BUY">Buy</option>
-              <option value="SELL">Sell</option>
-              <option value="DEPOSIT">Deposit</option>
-              <option value="WITHDRAWAL">Withdrawal</option>
-              <option value="DIVIDEND">Dividend</option>
-              <option value="INTEREST">Interest</option>
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Status</label>
-            <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            >
-              <option value="">All Statuses</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="PENDING">Pending</option>
-              <option value="PROCESSING">Processing</option>
-              <option value="FAILED">Failed</option>
-            </select>
-          </div>
-
-          {/* Search */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Search</label>
-            <input
-              type="text"
-              placeholder="Search description..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Error Message */}
       {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
 
@@ -258,24 +158,12 @@ export default function TransactionHistoryTable({
         </div>
         <div className="space-x-2">
           <button
-            onClick={() =>
-              setFilters((prev) => ({
-                ...prev,
-                offset: Math.max(0, prev.offset - prev.limit),
-              }))
-            }
             disabled={pagination.currentPage === 1}
             className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
           >
             Previous
           </button>
           <button
-            onClick={() =>
-              setFilters((prev) => ({
-                ...prev,
-                offset: prev.offset + prev.limit,
-              }))
-            }
             disabled={pagination.currentPage === pagination.pages}
             className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
           >

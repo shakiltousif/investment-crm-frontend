@@ -39,6 +39,35 @@ export const updateProfileSchema = z.object({
 export const portfolioSchema = z.object({
   name: z.string().min(1, 'Portfolio name is required'),
   description: z.string().optional(),
+  isActive: z.boolean().optional(),
+  totalValue: z.union([z.string(), z.number()]).transform((val) => val === '' ? undefined : Number(val)).pipe(z.number().min(0, 'Total value must be non-negative')).optional(),
+  totalInvested: z.union([z.string(), z.number()]).transform((val) => val === '' ? undefined : Number(val)).pipe(z.number().min(0, 'Total invested must be non-negative')).optional(),
+  totalGain: z.union([z.string(), z.number()]).transform((val) => val === '' ? undefined : Number(val)).pipe(z.number()).optional(),
+  gainPercentage: z.union([z.string(), z.number()]).transform((val) => val === '' ? undefined : Number(val)).pipe(z.number().min(-100, 'Gain percentage cannot be less than -100%')).optional(),
+}).refine((data) => {
+  // If both totalValue and totalInvested are provided, validate totalGain calculation
+  if (data.totalValue !== undefined && data.totalInvested !== undefined) {
+    const calculatedGain = data.totalValue - data.totalInvested;
+    if (data.totalGain !== undefined && Math.abs(data.totalGain - calculatedGain) > 0.01) {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: 'Total gain must match the difference between total value and total invested',
+  path: ['totalGain'],
+}).refine((data) => {
+  // If both totalInvested and gainPercentage are provided, validate calculation
+  if (data.totalInvested !== undefined && data.gainPercentage !== undefined && data.totalInvested > 0) {
+    const calculatedGainPercentage = ((data.totalValue || 0) - data.totalInvested) / data.totalInvested * 100;
+    if (Math.abs(data.gainPercentage - calculatedGainPercentage) > 0.01) {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: 'Gain percentage must match the calculated percentage based on total value and invested amount',
+  path: ['gainPercentage'],
 });
 
 // Bank Account schemas

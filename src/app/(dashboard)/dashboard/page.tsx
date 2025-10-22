@@ -34,14 +34,25 @@ interface DashboardData {
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Always try to load data when component mounts
+    fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    // Also load data when authentication state changes
     if (isAuthenticated) {
       fetchDashboardData();
     }
   }, [isAuthenticated]);
+
+  // Add a refresh function that can be called manually
+  const handleRefresh = () => {
+    fetchDashboardData();
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -57,10 +68,10 @@ export default function DashboardPage() {
         console.warn('Portfolio overview API not available:', portfolioErr);
         // Use mock data for demo purposes
         portfolioData = {
-          totalValue: 125000,
-          totalInvested: 100000,
-          totalGain: 25000,
-          gainPercentage: 25.0
+          totalValue: 10000,
+          totalInvested: 10000,
+          totalGain: 0,
+          gainPercentage: 0
         };
       }
 
@@ -113,6 +124,15 @@ export default function DashboardPage() {
     } catch (err: any) {
       console.error('Dashboard data fetch error:', err);
       setError(err.response?.data?.message || 'Failed to load dashboard data');
+      
+      // Set fallback data even if there's an error
+      setData({
+        portfolioValue: 0,
+        totalInvested: 0,
+        totalGain: 0,
+        gainPercentage: 0,
+        recentTransactions: [],
+      });
     } finally {
       setLoading(false);
     }

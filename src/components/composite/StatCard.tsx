@@ -140,7 +140,7 @@ export function PortfolioValueCard({
   loading = false 
 }: { 
   value: number; 
-  change?: { value: number; type: 'increase' | 'decrease' | 'neutral' }; 
+  change?: { value: number; type: 'increase' | 'decrease' | 'neutral'; period?: string }; 
   loading?: boolean; 
 }) {
   return (
@@ -160,7 +160,7 @@ export function TotalGainCard({
   loading = false 
 }: { 
   value: number; 
-  change?: { value: number; type: 'increase' | 'decrease' | 'neutral' }; 
+  change?: { value: number; type: 'increase' | 'decrease' | 'neutral'; period?: string }; 
   loading?: boolean; 
 }) {
   return (

@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,23 +19,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/login`,
-        { email, password },
-      );
-
-      // Store tokens
-      localStorage.setItem('accessToken', response.data.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.data.refreshToken);
-
-      // Redirect to dashboard
+      await login(email, password);
+      // Redirect to dashboard after successful login
       router.push('/dashboard');
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error?.message || 'Login failed');
-      } else {
-        setError('An unexpected error occurred');
-      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }

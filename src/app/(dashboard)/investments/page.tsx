@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import InvestmentList from '@/components/InvestmentList';
@@ -25,6 +26,7 @@ interface Investment {
 }
 
 export default function InvestmentsPage() {
+  const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [portfolios, setPortfolios] = useState<any[]>([]);
@@ -139,13 +141,23 @@ export default function InvestmentsPage() {
   };
 
   const handleBuyInvestment = (investment: Investment) => {
-    setSelectedInvestment(investment);
-    setShowBuyModal(true);
+    if (investment.id) {
+      // If it's a real investment, open the buy modal
+      setSelectedInvestment(investment);
+      setShowBuyModal(true);
+    } else {
+      // If it's the empty object from "Browse Marketplace", navigate to marketplace
+      router.push('/marketplace');
+    }
   };
 
   const handleSellInvestment = (investment: Investment) => {
     setSelectedInvestment(investment);
     setShowSellModal(true);
+  };
+
+  const handleBrowseMarketplace = () => {
+    router.push('/marketplace');
   };
 
   const handleModalClose = () => {
@@ -179,10 +191,10 @@ export default function InvestmentsPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Investments</h1>
         <button
-          onClick={() => setShowBuyModal(true)}
+          onClick={handleBrowseMarketplace}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
         >
-          Buy Investment
+          Browse Marketplace
         </button>
       </div>
 

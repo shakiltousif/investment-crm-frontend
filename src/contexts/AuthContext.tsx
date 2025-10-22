@@ -75,8 +75,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        // Only clear tokens if it's an authentication error
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -89,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await api.auth.login({ email, password });
-      const { user: userData, accessToken, refreshToken } = response.data;
+      const { user: userData, accessToken, refreshToken } = response.data.data;
 
       // Store tokens
       localStorage.setItem('accessToken', accessToken);
@@ -108,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await api.auth.register(data);
-      const { user: userData, accessToken, refreshToken } = response.data;
+      const { user: userData, accessToken, refreshToken } = response.data.data;
 
       // Store tokens
       localStorage.setItem('accessToken', accessToken);
@@ -139,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = async () => {
     try {
       const response = await api.users.getProfile();
-      setUser(response.data);
+      setUser(response.data.data);
     } catch (error) {
       console.error('Failed to refresh user:', error);
       throw error;
@@ -149,7 +152,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateUser = async (data: Partial<User>) => {
     try {
       const response = await api.users.updateProfile(data);
-      setUser(response.data);
+      setUser(response.data.data);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update profile');
     }

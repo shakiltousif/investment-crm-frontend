@@ -24,13 +24,17 @@ interface MarketplaceInvestment {
 interface MarketplaceListProps {
   investments: MarketplaceInvestment[];
   onBuy?: (investment: MarketplaceInvestment) => void;
+  onEdit?: (investment: MarketplaceInvestment) => void;
   onRefresh?: () => void;
+  liveQuotes?: Map<string, any>;
 }
 
 export default function MarketplaceList({
   investments,
   onBuy,
+  onEdit,
   onRefresh,
+  liveQuotes = new Map(),
 }: MarketplaceListProps) {
   const getRiskLevelColor = (riskLevel: string) => {
     switch (riskLevel) {
@@ -117,15 +121,27 @@ export default function MarketplaceList({
           <div className="space-y-2 mb-4">
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Current Price:</span>
-              <span className="font-medium">
-                {investment.currency} ${investment.currentPrice.toLocaleString()}
-              </span>
+              <div className="text-right">
+                <span className="font-medium">
+                  {investment.currency} ${Number(investment.currentPrice).toLocaleString()}
+                </span>
+                {investment.symbol && liveQuotes.has(investment.symbol) && (
+                  <div className="text-xs">
+                    <span className={`${liveQuotes.get(investment.symbol).change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {liveQuotes.get(investment.symbol).change >= 0 ? '+' : ''}
+                      {liveQuotes.get(investment.symbol).change.toFixed(2)} 
+                      ({liveQuotes.get(investment.symbol).changePercent.toFixed(2)}%)
+                    </span>
+                    <span className="text-gray-500 ml-1">Live</span>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Min Investment:</span>
               <span className="font-medium">
-                {investment.currency} ${investment.minimumInvestment.toLocaleString()}
+                {investment.currency} ${Number(investment.minimumInvestment).toLocaleString()}
               </span>
             </div>
             
@@ -133,7 +149,7 @@ export default function MarketplaceList({
               <div className="flex justify-between">
                 <span className="text-gray-600 text-sm">Max Investment:</span>
                 <span className="font-medium">
-                  {investment.currency} ${investment.maximumInvestment.toLocaleString()}
+                  {investment.currency} ${Number(investment.maximumInvestment).toLocaleString()}
                 </span>
               </div>
             )}
@@ -142,7 +158,7 @@ export default function MarketplaceList({
               <div className="flex justify-between">
                 <span className="text-gray-600 text-sm">Expected Return:</span>
                 <span className="font-medium text-green-600">
-                  {investment.expectedReturn.toFixed(2)}%
+                  {Number(investment.expectedReturn).toFixed(2)}%
                 </span>
               </div>
             )}
@@ -166,17 +182,31 @@ export default function MarketplaceList({
                 >
                   Invest Now
                 </button>
+                <button 
+                  onClick={() => onEdit?.(investment)}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                >
+                  Edit
+                </button>
                 <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                   Details
                 </button>
               </>
             ) : (
-              <button
-                disabled
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
-              >
-                Not Available
-              </button>
+              <div className="flex gap-2">
+                <button
+                  disabled
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+                >
+                  Not Available
+                </button>
+                <button 
+                  onClick={() => onEdit?.(investment)}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                >
+                  Edit
+                </button>
+              </div>
             )}
           </div>
 

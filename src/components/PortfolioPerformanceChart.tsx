@@ -167,7 +167,7 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
               performance.gainPercentage >= 0 ? 'text-green-600' : 'text-red-600'
             }`}
           >
-            {performance.gainPercentage.toFixed(2)}%
+            {Number(performance.gainPercentage).toFixed(2)}%
           </p>
         </div>
       </div>

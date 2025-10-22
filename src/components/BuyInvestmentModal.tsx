@@ -33,20 +33,29 @@ export default function BuyInvestmentModal({
 }: BuyInvestmentModalProps) {
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedPortfolio, setSelectedPortfolio] = useState<string>(portfolios[0]?.id || '');
+  
+  // Update selected portfolio when portfolios change
+  useEffect(() => {
+    if (portfolios.length > 0 && !selectedPortfolio) {
+      setSelectedPortfolio(portfolios[0].id);
+    }
+  }, [portfolios, selectedPortfolio]);
   const [preview, setPreview] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'input' | 'preview' | 'confirm'>('input');
 
   useEffect(() => {
-    if (selectedPortfolio && quantity > 0) {
+    if (selectedPortfolio && quantity > 0 && investment?.id) {
       fetchPreview();
     }
-  }, [quantity, selectedPortfolio]);
+  }, [quantity, selectedPortfolio, investment?.id]);
 
   const fetchPreview = async () => {
     try {
       setError(null);
+      console.log('Fetching preview for:', { investmentId: investment.id, quantity, portfolioId: selectedPortfolio });
+      
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/marketplace/buy/preview`,
         {
@@ -56,13 +65,16 @@ export default function BuyInvestmentModal({
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         },
       );
-      setPreview(response.data.data);
-    } catch (err) {
-      console.error(err);
+      
+      console.log('Preview response:', response.data);
+      setPreview(response.data.data || response.data);
+    } catch (err: any) {
+      console.error('Preview fetch error:', err);
+      setError(err.response?.data?.message || 'Failed to fetch preview');
     }
   };
 
@@ -80,7 +92,7 @@ export default function BuyInvestmentModal({
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         },
       );
@@ -130,17 +142,23 @@ export default function BuyInvestmentModal({
               {/* Portfolio Selection */}
               <div>
                 <label className="block text-sm font-medium mb-2">Select Portfolio</label>
-                <select
-                  value={selectedPortfolio}
-                  onChange={(e) => setSelectedPortfolio(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  {portfolios.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                {portfolios.length === 0 ? (
+                  <div className="bg-yellow-50 p-3 rounded-lg text-sm text-yellow-800">
+                    No portfolios available. Please create a portfolio first.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedPortfolio}
+                    onChange={(e) => setSelectedPortfolio(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    {portfolios.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Quantity Input */}
@@ -180,11 +198,41 @@ export default function BuyInvestmentModal({
                 </div>
               )}
 
-              {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
+              {/* Manual Calculation when preview fails */}
+              {!preview && !error && (
+                <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Cost:</span>
+                    <span className="font-semibold">
+                      ${(quantity * parseFloat(investment.currentPrice.toString())).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Fee (1%):</span>
+                    <span className="font-semibold">
+                      ${(quantity * parseFloat(investment.currentPrice.toString()) * 0.01).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="border-t pt-2 flex justify-between">
+                    <span className="font-medium">Total Amount:</span>
+                    <span className="font-bold text-lg">
+                      ${(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">
+                  <p className="font-semibold">Preview Error:</p>
+                  <p>{error}</p>
+                  <p className="mt-2 text-xs">Using manual calculation above.</p>
+                </div>
+              )}
             </>
           )}
 
-          {step === 'preview' && preview && (
+          {step === 'preview' && (
             <>
               <div className="space-y-3">
                 <div className="flex justify-between">
@@ -198,13 +246,13 @@ export default function BuyInvestmentModal({
                 <div className="flex justify-between">
                   <span>Unit Price:</span>
                   <span className="font-semibold">
-                    ${parseFloat(preview.unitPrice.toString()).toFixed(2)}
+                    ${parseFloat(investment.currentPrice.toString()).toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-medium">Total Amount:</span>
                   <span className="font-bold text-lg">
-                    ${parseFloat(preview.totalAmount.toString()).toFixed(2)}
+                    ${(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -238,7 +286,8 @@ export default function BuyInvestmentModal({
           {step === 'input' && (
             <button
               onClick={() => setStep('preview')}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              disabled={portfolios.length === 0 || !selectedPortfolio || quantity <= 0}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Review
             </button>

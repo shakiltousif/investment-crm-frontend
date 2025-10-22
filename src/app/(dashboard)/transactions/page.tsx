@@ -29,6 +29,10 @@ export default function TransactionsPage() {
     try {
       setLoading(true);
       setError('');
+      
+      // Add a small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const params: any = {};
       
       if (filters.type) params.type = filters.type;
@@ -41,8 +45,14 @@ export default function TransactionsPage() {
       try {
         const response = await api.transactions.getAll(params);
         setTransactions(response.data.data || response.data);
-      } catch (apiErr) {
-        console.warn('Transactions API not available:', apiErr);
+      } catch (apiErr: any) {
+        console.warn('Transactions API not available, using mock data:', apiErr);
+        
+        // Check if it's a rate limiting error
+        if (apiErr.response?.status === 429) {
+          console.log('Rate limited, using mock data instead');
+        }
+        
         // Use mock data for demo purposes
         const mockTransactions = [
           {
@@ -94,6 +104,26 @@ export default function TransactionsPage() {
             description: 'Withdrawal to bank account',
             transactionDate: '2023-12-02T16:45:00Z',
             completedAt: null
+          },
+          {
+            id: '6',
+            type: 'BUY',
+            amount: 3200,
+            currency: 'USD',
+            status: 'COMPLETED',
+            description: 'Purchased Microsoft Corp. shares',
+            transactionDate: '2023-11-20T11:15:00Z',
+            completedAt: '2023-11-20T11:20:00Z'
+          },
+          {
+            id: '7',
+            type: 'INTEREST',
+            amount: 45.50,
+            currency: 'USD',
+            status: 'COMPLETED',
+            description: 'Savings account interest',
+            transactionDate: '2023-11-30T00:00:00Z',
+            completedAt: '2023-11-30T00:00:00Z'
           }
         ];
         setTransactions(mockTransactions);
@@ -243,6 +273,9 @@ export default function TransactionsPage() {
       </div>
 
       <TransactionHistoryTable
+        transactions={transactions}
+        loading={loading}
+        error={error}
         onRefresh={fetchTransactions}
       />
     </div>
