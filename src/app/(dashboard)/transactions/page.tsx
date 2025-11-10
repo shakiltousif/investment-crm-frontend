@@ -59,7 +59,7 @@ export default function TransactionsPage() {
             id: '1',
             type: 'BUY',
             amount: 5000,
-            currency: 'USD',
+            currency: 'GBP',
             status: 'COMPLETED',
             description: 'Purchased Apple Inc. shares',
             transactionDate: '2023-12-01T10:30:00Z',
@@ -69,7 +69,7 @@ export default function TransactionsPage() {
             id: '2',
             type: 'SELL',
             amount: 2500,
-            currency: 'USD',
+            currency: 'GBP',
             status: 'COMPLETED',
             description: 'Sold Tesla Inc. shares',
             transactionDate: '2023-11-28T14:20:00Z',
@@ -79,7 +79,7 @@ export default function TransactionsPage() {
             id: '3',
             type: 'DEPOSIT',
             amount: 10000,
-            currency: 'USD',
+            currency: 'GBP',
             status: 'COMPLETED',
             description: 'Bank transfer deposit',
             transactionDate: '2023-11-25T09:15:00Z',
@@ -89,7 +89,7 @@ export default function TransactionsPage() {
             id: '4',
             type: 'DIVIDEND',
             amount: 150,
-            currency: 'USD',
+            currency: 'GBP',
             status: 'COMPLETED',
             description: 'Apple Inc. dividend payment',
             transactionDate: '2023-11-15T00:00:00Z',
@@ -99,7 +99,7 @@ export default function TransactionsPage() {
             id: '5',
             type: 'WITHDRAWAL',
             amount: 2000,
-            currency: 'USD',
+            currency: 'GBP',
             status: 'PENDING',
             description: 'Withdrawal to bank account',
             transactionDate: '2023-12-02T16:45:00Z',
@@ -109,7 +109,7 @@ export default function TransactionsPage() {
             id: '6',
             type: 'BUY',
             amount: 3200,
-            currency: 'USD',
+            currency: 'GBP',
             status: 'COMPLETED',
             description: 'Purchased Microsoft Corp. shares',
             transactionDate: '2023-11-20T11:15:00Z',
@@ -119,7 +119,7 @@ export default function TransactionsPage() {
             id: '7',
             type: 'INTEREST',
             amount: 45.50,
-            currency: 'USD',
+            currency: 'GBP',
             status: 'COMPLETED',
             description: 'Savings account interest',
             transactionDate: '2023-11-30T00:00:00Z',
@@ -172,7 +172,7 @@ export default function TransactionsPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading transactions...</p>
         </div>
       </div>
@@ -185,7 +185,7 @@ export default function TransactionsPage() {
         <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
         <button
           onClick={exportToCSV}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
         >
           Export CSV
         </button>
@@ -196,7 +196,7 @@ export default function TransactionsPage() {
           <p className="text-red-700">{error}</p>
           <button 
             onClick={fetchTransactions}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90"
           >
             Retry
           </button>
@@ -214,7 +214,7 @@ export default function TransactionsPage() {
             <select
               value={filters.type}
               onChange={(e) => handleFilterChange('type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="">All Types</option>
               <option value="DEPOSIT">Deposit</option>
@@ -235,7 +235,7 @@ export default function TransactionsPage() {
             <select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="">All Statuses</option>
               <option value="PENDING">Pending</option>
@@ -254,7 +254,7 @@ export default function TransactionsPage() {
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
           
@@ -266,7 +266,7 @@ export default function TransactionsPage() {
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
         </div>

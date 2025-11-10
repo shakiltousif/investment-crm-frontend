@@ -70,7 +70,7 @@ export default function ProfilePage() {
       case 'PENDING':
         return 'text-yellow-600 bg-yellow-100';
       case 'REJECTED':
-        return 'text-red-600 bg-red-100';
+        return 'text-secondary bg-secondary/10';
       case 'EXPIRED':
         return 'text-orange-600 bg-orange-100';
       default:
@@ -82,7 +82,7 @@ export default function ProfilePage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading profile...</p>
         </div>
       </div>
@@ -107,7 +107,7 @@ export default function ProfilePage() {
             {!editing && (
               <button
                 onClick={() => setEditing(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
               >
                 Edit Profile
               </button>

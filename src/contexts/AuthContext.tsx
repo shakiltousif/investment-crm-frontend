@@ -16,6 +16,7 @@ interface User {
   state?: string;
   zipCode?: string;
   country?: string;
+  role?: 'CLIENT' | 'ADMIN';
   kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'EXPIRED';
   kycVerifiedAt?: string;
   isEmailVerified: boolean;
@@ -73,10 +74,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (token) {
           await refreshUser();
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth check failed:', error);
         // Only clear tokens if it's an authentication error
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
         }
@@ -90,21 +91,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      setIsLoading(true);
+      // Don't set global loading state - component handles its own loading state
+      // This prevents page reloads during login
       const response = await api.auth.login({ email, password });
-      const { user: userData, accessToken, refreshToken } = response.data.data;
+      
+      // Handle different response structures
+      const responseData = response.data?.data || response.data;
+      const { user: userData, accessToken, refreshToken } = responseData;
+
+      if (!accessToken || !refreshToken) {
+        throw new Error('Invalid response from server');
+      }
 
       // Store tokens
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
 
-      // Set user data
-      setUser(userData);
+      // Set user data - ensure all required fields are present
+      if (userData) {
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          phoneNumber: userData.phoneNumber,
+          profilePicture: userData.profilePicture,
+          dateOfBirth: userData.dateOfBirth,
+          address: userData.address,
+          city: userData.city,
+          state: userData.state,
+          zipCode: userData.zipCode,
+          country: userData.country,
+          role: userData.role || 'CLIENT',
+          kycStatus: userData.kycStatus || 'PENDING',
+          kycVerifiedAt: userData.kycVerifiedAt,
+          isEmailVerified: userData.isEmailVerified || false,
+          emailVerifiedAt: userData.emailVerifiedAt,
+          isActive: userData.isActive !== undefined ? userData.isActive : true,
+          lastLoginAt: userData.lastLoginAt,
+          createdAt: userData.createdAt || new Date().toISOString(),
+          updatedAt: userData.updatedAt || new Date().toISOString(),
+        });
+      }
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
+      console.error('Login error:', error);
+      
+      // Provide more specific error messages
+      if (error.response) {
+        const errorMessage = error.response.data?.message || 
+                           error.response.data?.error || 
+                           'Login failed. Please check your credentials.';
+        throw new Error(errorMessage);
+      } else if (error.request) {
+        throw new Error('Unable to connect to server. Please check your connection.');
+      } else {
+        throw new Error(error.message || 'Login failed');
+      }
     }
+    // Don't set isLoading(false) here - let the component handle it
   };
 
   const register = async (data: RegisterData) => {
@@ -142,7 +186,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = async () => {
     try {
       const response = await api.users.getProfile();
-      setUser(response.data.data);
+      const userData = response.data.data;
+      // Ensure role is included and all required fields are present
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        phoneNumber: userData.phoneNumber,
+        profilePicture: userData.profilePicture,
+        dateOfBirth: userData.dateOfBirth,
+        address: userData.address,
+        city: userData.city,
+        state: userData.state,
+        zipCode: userData.zipCode,
+        country: userData.country,
+        role: userData.role || 'CLIENT',
+        kycStatus: userData.kycStatus || 'PENDING',
+        kycVerifiedAt: userData.kycVerifiedAt,
+        isEmailVerified: userData.isEmailVerified || false,
+        emailVerifiedAt: userData.emailVerifiedAt,
+        isActive: userData.isActive !== undefined ? userData.isActive : true,
+        lastLoginAt: userData.lastLoginAt,
+        createdAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: userData.updatedAt || new Date().toISOString(),
+      });
     } catch (error) {
       console.error('Failed to refresh user:', error);
       throw error;

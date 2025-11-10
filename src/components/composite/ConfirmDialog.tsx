@@ -37,6 +37,7 @@ interface ConfirmDialogProps {
   onCancel?: () => void;
   icon?: React.ReactNode;
   className?: string;
+  showCancel?: boolean; // If false, only shows confirm button (for messages)
 }
 
 export function ConfirmDialog({
@@ -52,6 +53,7 @@ export function ConfirmDialog({
   onCancel,
   icon,
   className,
+  showCancel = true,
 }: ConfirmDialogProps) {
   const getVariantStyles = () => {
     switch (variant) {
@@ -121,17 +123,20 @@ export function ConfirmDialog({
         </DialogHeader>
 
         <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={loading}
-          >
-            {cancelText}
-          </Button>
+          {showCancel && (
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              {cancelText}
+            </Button>
+          )}
           <Button
             variant={variantStyles.confirmVariant}
             onClick={handleConfirm}
             disabled={loading}
+            className={!showCancel ? 'w-full' : ''}
           >
             {loading ? 'Processing...' : confirmText}
           </Button>
@@ -286,6 +291,8 @@ export function useConfirmDialog() {
     onConfirm: () => void;
     variant?: 'default' | 'destructive' | 'warning' | 'info' | 'success';
     loading?: boolean;
+    showCancel?: boolean;
+    confirmText?: string;
   }>({
     open: false,
     title: '',
@@ -298,7 +305,9 @@ export function useConfirmDialog() {
     description: string,
     onConfirm: () => void,
     variant: 'default' | 'destructive' | 'warning' | 'info' | 'success' = 'default',
-    loading = false
+    loading = false,
+    showCancel = true,
+    confirmText = 'Confirm'
   ) => {
     setDialog({
       open: true,
@@ -307,6 +316,8 @@ export function useConfirmDialog() {
       onConfirm,
       variant,
       loading,
+      showCancel,
+      confirmText,
     });
   };
 
@@ -331,6 +342,8 @@ export function useConfirmDialog() {
         variant={dialog.variant}
         loading={dialog.loading}
         onConfirm={handleConfirm}
+        showCancel={dialog.showCancel}
+        confirmText={dialog.confirmText}
       />
     ),
   };

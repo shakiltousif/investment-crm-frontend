@@ -117,11 +117,11 @@ export default function AuditLogViewer({ userId }: AuditLogViewerProps) {
   };
 
   const getStatusColor = (status: string) => {
-    return status === 'SUCCESS' ? 'text-green-600' : 'text-red-600';
+    return status === 'SUCCESS' ? 'text-green-600' : 'text-secondary';
   };
 
   const getStatusBg = (status: string) => {
-    return status === 'SUCCESS' ? 'bg-green-50' : 'bg-red-50';
+    return status === 'SUCCESS' ? 'bg-green-50' : 'bg-secondary/10';
   };
 
   return (
@@ -130,7 +130,7 @@ export default function AuditLogViewer({ userId }: AuditLogViewerProps) {
         <h2 className="text-2xl font-bold">Audit Logs</h2>
         <button
           onClick={handleExport}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
         >
           Export CSV
         </button>

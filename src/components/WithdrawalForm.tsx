@@ -24,7 +24,7 @@ interface WithdrawalFormProps {
 export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: WithdrawalFormProps) {
   const [formData, setFormData] = useState({
     amount: '',
-    currency: 'USD',
+    currency: 'GBP',
     bankAccountId: '',
     description: '',
   });
@@ -46,7 +46,7 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
     setFormData((prev) => ({
       ...prev,
       bankAccountId: accountId,
-      currency: account?.currency || 'USD',
+      currency: account?.currency || 'GBP',
     }));
   };
 
@@ -120,7 +120,7 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
               value={formData.amount}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
 
@@ -131,13 +131,12 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
               value={formData.bankAccountId}
               onChange={handleAccountChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="">Select an account</option>
               {bankAccounts.map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.bankName} - ****{account.accountNumber.slice(-4)} (Balance: {account.currency}{' '}
-                  {parseFloat(account.balance.toString()).toFixed(2)})
+                  {account.bankName} - ****{account.accountNumber.slice(-4)} (Balance: £{parseFloat(account.balance.toString()).toFixed(2)})
                 </option>
               ))}
             </select>
@@ -149,14 +148,14 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-600">Available Balance:</span>
                 <span className="font-semibold">
-                  {formData.currency} {parseFloat(selectedAccount.balance.toString()).toFixed(2)}
+                  £{parseFloat(selectedAccount.balance.toString()).toFixed(2)}
                 </span>
               </div>
               {amount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Balance After:</span>
-                  <span className={`font-semibold ${balanceAfter < 0 ? 'text-red-600' : ''}`}>
-                    {formData.currency} {balanceAfter.toFixed(2)}
+                  <span className={`font-semibold ${balanceAfter < 0 ? 'text-secondary' : ''}`}>
+                    £{balanceAfter.toFixed(2)}
                   </span>
                 </div>
               )}
@@ -172,7 +171,7 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
               placeholder="e.g., Monthly withdrawal"
               value={formData.description}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
 
@@ -193,7 +192,7 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
             >
               Continue
             </button>
@@ -207,7 +206,7 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
             <div className="flex justify-between">
               <span className="text-gray-600">Amount:</span>
               <span className="font-semibold">
-                {formData.currency} {parseFloat(formData.amount).toFixed(2)}
+                £{parseFloat(formData.amount).toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -217,13 +216,13 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
             <div className="flex justify-between">
               <span className="text-gray-600">Current Balance:</span>
               <span className="font-semibold">
-                {formData.currency} {parseFloat(selectedAccount.balance.toString()).toFixed(2)}
+                £{parseFloat(selectedAccount.balance.toString()).toFixed(2)}
               </span>
             </div>
             <div className="border-t pt-3 flex justify-between">
               <span className="text-gray-600">Balance After:</span>
               <span className="font-semibold">
-                {formData.currency} {balanceAfter.toFixed(2)}
+                £{balanceAfter.toFixed(2)}
               </span>
             </div>
           </div>
@@ -253,7 +252,7 @@ export default function WithdrawalForm({ bankAccounts, onSuccess, onCancel }: Wi
             <button
               onClick={handleConfirm}
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition disabled:opacity-50"
             >
               {loading ? 'Processing...' : 'Confirm Withdrawal'}
             </button>

@@ -165,9 +165,9 @@ export function ResponsiveText({
     gray: 'text-gray-600',
     black: 'text-gray-900',
     white: 'text-white',
-    red: 'text-red-600',
+    red: 'text-secondary',
     green: 'text-green-600',
-    blue: 'text-blue-600',
+    blue: 'text-primary',
     yellow: 'text-yellow-600',
   };
 
@@ -207,9 +207,9 @@ export function ResponsiveButton({
   responsive = true,
 }: ResponsiveButtonProps) {
   const variantClasses = {
-    primary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+    primary: 'bg-primary hover:bg-primary/90 text-white',
     secondary: 'bg-gray-300 hover:bg-gray-400 text-gray-900',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
+    danger: 'bg-secondary hover:bg-secondary/90 text-white',
     success: 'bg-green-600 hover:bg-green-700 text-white',
     warning: 'bg-yellow-600 hover:bg-yellow-700 text-white',
   };

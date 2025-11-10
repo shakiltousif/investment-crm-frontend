@@ -17,6 +17,10 @@ import { CardSkeleton } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { RefreshCw, TrendingUp, TrendingDown, DollarSign, CreditCard } from 'lucide-react';
+import LiveQuoteTicker from '@/components/LiveQuoteTicker';
+import Link from 'next/link';
+import PortfolioPerformanceChart from '@/components/PortfolioPerformanceChart';
+import PortfolioAllocationChart from '@/components/PortfolioAllocationChart';
 
 interface DashboardData {
   portfolioValue: number;
@@ -28,6 +32,20 @@ interface DashboardData {
     type: string;
     amount: number;
     date: string;
+  }>;
+  latestDeposits: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    createdAt: string;
+  }>;
+  latestWithdrawals: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    createdAt: string;
   }>;
 }
 
@@ -54,6 +72,17 @@ export default function DashboardPage() {
     fetchDashboardData();
   };
 
+  // Helper function to safely convert Decimal or number to number
+  const toNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return parseFloat(value) || 0;
+    if (typeof value === 'object' && 'toString' in value) {
+      return parseFloat(value.toString()) || 0;
+    }
+    return 0;
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -63,16 +92,46 @@ export default function DashboardPage() {
       let portfolioData = null;
       try {
         const portfolioResponse = await api.portfolios.getOverview();
-        portfolioData = portfolioResponse.data;
+        const rawData = portfolioResponse.data.data || portfolioResponse.data;
+        portfolioData = {
+          totalValue: toNumber(rawData?.totalValue),
+          totalInvested: toNumber(rawData?.totalInvested),
+          totalGain: toNumber(rawData?.totalGain),
+          gainPercentage: toNumber(rawData?.gainPercentage),
+        };
       } catch (portfolioErr) {
         console.warn('Portfolio overview API not available:', portfolioErr);
-        // Use mock data for demo purposes
+        // Use default values if API fails
         portfolioData = {
-          totalValue: 10000,
-          totalInvested: 10000,
+          totalValue: 0,
+          totalInvested: 0,
           totalGain: 0,
           gainPercentage: 0
         };
+      }
+
+      // Try to fetch latest deposits
+      let latestDeposits = [];
+      try {
+        const depositsResponse = await api.deposits.getAll({ limit: 5 });
+        // Backend returns: { data: deposits[], pagination: {...} }
+        latestDeposits = depositsResponse.data?.data || depositsResponse.data || [];
+        console.log('Fetched deposits:', latestDeposits);
+      } catch (depositsErr) {
+        console.error('Deposits API error:', depositsErr);
+        // Don't silently fail - log the error
+      }
+
+      // Try to fetch latest withdrawals
+      let latestWithdrawals = [];
+      try {
+        const withdrawalsResponse = await api.withdrawals.getAll({ limit: 5 });
+        // Backend returns: { data: withdrawals[], pagination: {...} }
+        latestWithdrawals = withdrawalsResponse.data?.data || withdrawalsResponse.data || [];
+        console.log('Fetched withdrawals:', latestWithdrawals);
+      } catch (withdrawalsErr) {
+        console.error('Withdrawals API error:', withdrawalsErr);
+        // Don't silently fail - log the error
       }
 
       // Try to fetch recent transactions
@@ -115,11 +174,29 @@ export default function DashboardPage() {
       }
 
       setData({
-        portfolioValue: parseFloat(portfolioData.totalValue || 0),
-        totalInvested: parseFloat(portfolioData.totalInvested || 0),
-        totalGain: parseFloat(portfolioData.totalGain || 0),
-        gainPercentage: parseFloat(portfolioData.gainPercentage || 0),
+        portfolioValue: toNumber(portfolioData.totalValue),
+        totalInvested: toNumber(portfolioData.totalInvested),
+        totalGain: toNumber(portfolioData.totalGain),
+        gainPercentage: toNumber(portfolioData.gainPercentage),
         recentTransactions,
+        latestDeposits: Array.isArray(latestDeposits) 
+          ? latestDeposits.slice(0, 5).map((d: any) => ({
+              id: d.id,
+              amount: toNumber(d.amount),
+              currency: d.currency || 'GBP',
+              status: d.status || 'PENDING',
+              createdAt: d.createdAt || d.transactionDate || new Date().toISOString(),
+            }))
+          : [],
+        latestWithdrawals: Array.isArray(latestWithdrawals)
+          ? latestWithdrawals.slice(0, 5).map((w: any) => ({
+              id: w.id,
+              amount: toNumber(w.amount),
+              currency: w.currency || 'GBP',
+              status: w.status || 'PENDING',
+              createdAt: w.createdAt || w.transactionDate || new Date().toISOString(),
+            }))
+          : [],
       });
     } catch (err: any) {
       console.error('Dashboard data fetch error:', err);
@@ -132,6 +209,8 @@ export default function DashboardPage() {
         totalGain: 0,
         gainPercentage: 0,
         recentTransactions: [],
+        latestDeposits: [],
+        latestWithdrawals: [],
       });
     } finally {
       setLoading(false);
@@ -193,6 +272,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Live UK Share Feed Ticker */}
+      <LiveQuoteTicker />
+      
       <DashboardHeader 
         userName={user?.firstName} 
         actions={
@@ -216,7 +298,7 @@ export default function DashboardPage() {
 
         <StatCard
           title="Total Invested"
-          value={`$${(data?.totalInvested || 0).toLocaleString()}`}
+          value={`£${(data?.totalInvested || 0).toLocaleString()}`}
           icon={DollarSign}
           description="Principal amount invested"
         />
@@ -234,6 +316,148 @@ export default function DashboardPage() {
           count={data?.recentTransactions?.length || 0}
           period="Recent Activity"
         />
+      </div>
+
+      {/* Latest Deposits and Withdrawals */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Latest Deposits Panel */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Latest Deposits</span>
+              <Link href="/deposits" className="text-sm text-primary hover:underline">
+                View All
+              </Link>
+            </CardTitle>
+            <CardDescription>
+              Your most recent deposit requests
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data?.latestDeposits && data.latestDeposits.length > 0 ? (
+              <div className="space-y-3">
+                {data.latestDeposits.map((deposit) => (
+                  <div
+                    key={deposit.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        £{deposit.amount.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(deposit.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <Badge
+                      variant={
+                        deposit.status === 'COMPLETED'
+                          ? 'default'
+                          : deposit.status === 'PENDING'
+                          ? 'secondary'
+                          : deposit.status === 'REJECTED'
+                          ? 'destructive'
+                          : 'outline'
+                      }
+                    >
+                      {deposit.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <p>No deposits found.</p>
+                <Link href="/deposits" className="text-sm text-primary hover:underline mt-2 inline-block">
+                  Make a deposit
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Latest Withdrawals Panel */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Latest Withdrawals</span>
+              <Link href="/withdrawals" className="text-sm text-primary hover:underline">
+                View All
+              </Link>
+            </CardTitle>
+            <CardDescription>
+              Your most recent withdrawal requests
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data?.latestWithdrawals && data.latestWithdrawals.length > 0 ? (
+              <div className="space-y-3">
+                {data.latestWithdrawals.map((withdrawal) => (
+                  <div
+                    key={withdrawal.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        £{withdrawal.amount.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(withdrawal.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <Badge
+                      variant={
+                        withdrawal.status === 'COMPLETED'
+                          ? 'default'
+                          : withdrawal.status === 'PENDING'
+                          ? 'secondary'
+                          : withdrawal.status === 'REJECTED'
+                          ? 'destructive'
+                          : 'outline'
+                      }
+                    >
+                      {withdrawal.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <p>No withdrawals found.</p>
+                <Link href="/withdrawals" className="text-sm text-primary hover:underline mt-2 inline-block">
+                  Request withdrawal
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Performance Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Portfolio Performance</CardTitle>
+            <CardDescription>
+              Track your portfolio growth over time
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <PortfolioPerformanceChart portfolioId="all" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Portfolio Allocation</CardTitle>
+            <CardDescription>
+              Distribution of your investments
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <PortfolioAllocationChart portfolioId="all" />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Transactions */}
@@ -266,7 +490,7 @@ export default function DashboardPage() {
                       {transaction.type}
                     </Badge>
                     <div className="font-medium">
-                      ${transaction.amount.toLocaleString()}
+                      £{transaction.amount.toLocaleString()}
                     </div>
                   </div>
                 </div>

@@ -54,7 +54,7 @@ export default function BankAccountsPage() {
             bankName: 'Chase Bank',
             bankCode: 'CHASUS33',
             accountType: 'CHECKING',
-            currency: 'USD',
+            currency: 'GBP',
             balance: 25000,
             isVerified: true,
             verifiedAt: '2023-01-15T00:00:00Z',
@@ -69,7 +69,7 @@ export default function BankAccountsPage() {
             bankName: 'Bank of America',
             bankCode: 'BOFAUS3N',
             accountType: 'SAVINGS',
-            currency: 'USD',
+            currency: 'GBP',
             balance: 50000,
             isVerified: true,
             verifiedAt: '2023-03-20T00:00:00Z',
@@ -84,7 +84,7 @@ export default function BankAccountsPage() {
             bankName: 'Wells Fargo',
             bankCode: 'WFBIUS6S',
             accountType: 'CHECKING',
-            currency: 'USD',
+            currency: 'GBP',
             balance: 15000,
             isVerified: false,
             verifiedAt: null,
@@ -162,7 +162,7 @@ export default function BankAccountsPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading bank accounts...</p>
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function BankAccountsPage() {
         <h1 className="text-3xl font-bold text-gray-900">Bank Accounts</h1>
         <button
           onClick={handleCreateAccount}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
         >
           Add Bank Account
         </button>
@@ -186,7 +186,7 @@ export default function BankAccountsPage() {
           <p className="text-red-700">{error}</p>
           <button 
             onClick={fetchBankAccounts}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90"
           >
             Retry
           </button>

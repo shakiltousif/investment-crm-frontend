@@ -49,7 +49,7 @@ module.exports = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))'
         },
-        // Professional color palette
+        // Professional color palette inspired by FIL Investment Portal
         success: {
           DEFAULT: 'hsl(142, 76%, 36%)',
           foreground: 'hsl(355, 7%, 97%)'
@@ -61,6 +61,28 @@ module.exports = {
         info: {
           DEFAULT: 'hsl(199, 89%, 48%)',
           foreground: 'hsl(355, 7%, 97%)'
+        },
+        // FIL-inspired colors
+        'fil-blue': {
+          DEFAULT: '#00598f',
+          light: '#1a6ba3',
+          dark: '#004770',
+          darker: '#003550'
+        },
+        'fil-green': {
+          DEFAULT: '#8bc34a',
+          light: '#9ccc65',
+          dark: '#689f38'
+        },
+        'fil-red': {
+          DEFAULT: '#b8281f',
+          light: '#d14a42',
+          dark: '#9a1f18'
+        },
+        'fil-orange': {
+          DEFAULT: '#ff5722',
+          light: '#ff8a65',
+          dark: '#d84315'
         }
       },
       borderRadius: {

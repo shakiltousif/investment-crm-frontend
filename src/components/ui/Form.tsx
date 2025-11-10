@@ -47,11 +47,17 @@ export function FormField({
       error && "border-destructive focus-visible:ring-destructive"
     );
 
+    // Normalize field value to ensure controlled inputs
+    const normalizedField = {
+      ...field,
+      value: field.value ?? (type === 'number' ? '' : ''),
+    };
+
     switch (type) {
       case 'textarea':
         return (
           <textarea
-            {...field}
+            {...normalizedField}
             placeholder={placeholder}
             disabled={disabled}
             rows={rows}
@@ -65,7 +71,7 @@ export function FormField({
       case 'number':
         return (
           <Input
-            {...field}
+            {...normalizedField}
             type="number"
             placeholder={placeholder}
             disabled={disabled}
@@ -94,7 +100,7 @@ export function FormField({
       default:
         return (
           <Input
-            {...field}
+            {...normalizedField}
             type={type}
             placeholder={placeholder}
             disabled={disabled}
@@ -103,6 +109,31 @@ export function FormField({
         );
     }
   };
+
+  if (!control) {
+    console.warn(`FormField "${name}" is missing the control prop. Make sure it's used within a Form component.`);
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={name} className="text-sm font-medium">
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        <Input
+          type={type}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={cn(
+            "transition-colors",
+            error && "border-destructive focus-visible:ring-destructive",
+            className
+          )}
+        />
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -165,11 +196,14 @@ export function Form<T extends z.ZodType>({
       className={cn("space-y-6", className)}
     >
       {React.Children.map(children, (child) => {
-        if (React.isValidElement(child) && child.type === FormField) {
-          return React.cloneElement(child, {
-            control,
-            error: errors[child.props.name]?.message,
-          } as any);
+        if (React.isValidElement(child)) {
+          // Inject control and error props into form field components
+          if (child.type === FormField || child.type === SelectField || child.type === CheckboxField || child.type === RadioGroup) {
+            return React.cloneElement(child, {
+              control,
+              error: errors[child.props.name]?.message,
+            } as any);
+          }
         }
         return child;
       })}
@@ -220,6 +254,36 @@ export function SelectField({
   control,
   className = '',
 }: SelectFieldProps) {
+  if (!control) {
+    console.warn(`SelectField "${name}" is missing the control prop. Make sure it's used within a Form component.`);
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={name} className="text-sm font-medium">
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        <select
+          disabled={disabled}
+          className={cn(
+            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            error && "border-destructive focus-visible:ring-destructive",
+            className
+          )}
+        >
+          <option value="">{placeholder}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <Label htmlFor={name} className="text-sm font-medium">
@@ -229,24 +293,31 @@ export function SelectField({
       <Controller
         name={name}
         control={control}
-        render={({ field }) => (
-          <select
-            {...field}
-            disabled={disabled}
-            className={cn(
-              "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-              error && "border-destructive focus-visible:ring-destructive",
-              className
-            )}
-          >
-            <option value="">{placeholder}</option>
-            {options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        )}
+        render={({ field }) => {
+          // Normalize value to ensure controlled select
+          const normalizedField = {
+            ...field,
+            value: field.value ?? '',
+          };
+          return (
+            <select
+              {...normalizedField}
+              disabled={disabled}
+              className={cn(
+                "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                error && "border-destructive focus-visible:ring-destructive",
+                className
+              )}
+            >
+              <option value="">{placeholder}</option>
+              {options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          );
+        }}
       />
       {error && (
         <p className="text-sm text-destructive">{error}</p>
@@ -275,6 +346,35 @@ export function CheckboxField({
   control,
   className = '',
 }: CheckboxFieldProps) {
+  if (!control) {
+    console.warn(`CheckboxField "${name}" is missing the control prop. Make sure it's used within a Form component.`);
+    return (
+      <div className={cn("space-y-2", className)}>
+        <div className="flex items-start space-x-3">
+          <div className="flex items-center h-5">
+            <input
+              type="checkbox"
+              name={name}
+              disabled={disabled}
+              className="h-4 w-4 rounded border border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              {label}
+            </Label>
+            {description && (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
+        </div>
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={cn("space-y-2", className)}>
       <Controller
@@ -334,6 +434,40 @@ export function RadioGroup({
   control,
   className = '',
 }: RadioGroupProps) {
+  if (!control) {
+    console.warn(`RadioGroup "${name}" is missing the control prop. Make sure it's used within a Form component.`);
+    return (
+      <div className={cn("space-y-3", className)}>
+        <Label className="text-sm font-medium">
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        <div className="space-y-2">
+          {options.map((option) => (
+            <div key={option.value} className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name={name}
+                value={option.value}
+                disabled={disabled}
+                className="h-4 w-4 text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <div>
+                <span className="text-sm">{option.label}</span>
+                {option.description && (
+                  <p className="text-xs text-muted-foreground">{option.description}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={cn("space-y-3", className)}>
       <Label className="text-sm font-medium">
@@ -343,23 +477,26 @@ export function RadioGroup({
       <Controller
         name={name}
         control={control}
-        render={({ field }) => (
-          <div className="space-y-3">
-            {options.map((option) => (
-              <div key={option.value} className="flex items-start space-x-3">
-                <div className="flex items-center h-5">
-                  <input
-                    {...field}
-                    type="radio"
-                    value={option.value}
-                    checked={field.value === option.value}
-                    disabled={disabled}
-                    className={cn(
-                      "h-4 w-4 border border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                      error && "border-destructive"
-                    )}
-                  />
-                </div>
+        render={({ field }) => {
+          // Normalize value to ensure controlled radio
+          const normalizedValue = field.value ?? '';
+          return (
+            <div className="space-y-3">
+              {options.map((option) => (
+                <div key={option.value} className="flex items-start space-x-3">
+                  <div className="flex items-center h-5">
+                    <input
+                      {...field}
+                      type="radio"
+                      value={option.value}
+                      checked={normalizedValue === option.value}
+                      disabled={disabled}
+                      className={cn(
+                        "h-4 w-4 border border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                        error && "border-destructive"
+                      )}
+                    />
+                  </div>
                 <div className="space-y-1">
                   <Label className="text-sm font-medium">
                     {option.label}
@@ -371,7 +508,8 @@ export function RadioGroup({
               </div>
             ))}
           </div>
-        )}
+          );
+        }}
       />
       {error && (
         <p className="text-sm text-destructive">{error}</p>

@@ -219,7 +219,7 @@ export default function InvestmentForm({
                       Total Invested
                     </div>
                     <div className="text-2xl font-bold">
-                      ${totalInvested.toLocaleString()}
+                      £{totalInvested.toLocaleString()}
                     </div>
                   </div>
                   
@@ -229,7 +229,7 @@ export default function InvestmentForm({
                       Current Value
                     </div>
                     <div className="text-2xl font-bold">
-                      ${totalValue.toLocaleString()}
+                      £{totalValue.toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -249,7 +249,7 @@ export default function InvestmentForm({
                         <Badge 
                           variant={gainLoss >= 0 ? 'success' : 'destructive'}
                         >
-                          {gainLoss >= 0 ? '+' : ''}${gainLoss.toLocaleString()}
+                          {gainLoss >= 0 ? '+' : ''}£{gainLoss.toLocaleString()}
                         </Badge>
                         <Badge 
                           variant={gainPercentage >= 0 ? 'success' : 'destructive'}

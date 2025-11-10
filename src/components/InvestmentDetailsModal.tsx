@@ -44,7 +44,7 @@ export default function InvestmentDetailsModal({
       case 'MEDIUM':
         return 'text-yellow-600 bg-yellow-100';
       case 'HIGH':
-        return 'text-red-600 bg-red-100';
+        return 'text-secondary bg-secondary/10';
       default:
         return 'text-gray-600 bg-gray-100';
     }
@@ -53,7 +53,7 @@ export default function InvestmentDetailsModal({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'STOCK':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-primary bg-primary/10';
       case 'BOND':
         return 'text-purple-600 bg-purple-100';
       case 'TERM_DEPOSIT':
@@ -61,7 +61,7 @@ export default function InvestmentDetailsModal({
       case 'PRIVATE_EQUITY':
         return 'text-orange-600 bg-orange-100';
       case 'MUTUAL_FUND':
-        return 'text-indigo-600 bg-indigo-100';
+        return 'text-primary bg-primary/10';
       case 'ETF':
         return 'text-cyan-600 bg-cyan-100';
       case 'CRYPTOCURRENCY':
@@ -123,11 +123,11 @@ export default function InvestmentDetailsModal({
                   <span className="text-gray-600">Current Price:</span>
                   <div className="text-right">
                     <span className="font-semibold text-lg">
-                      {investment.currency} ${Number(investment.currentPrice).toLocaleString()}
+                      £{Number(investment.currentPrice).toLocaleString()}
                     </span>
                     {investment.symbol && liveQuotes.has(investment.symbol) && (
                       <div className="text-sm">
-                        <span className={`${liveQuotes.get(investment.symbol).change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`${liveQuotes.get(investment.symbol).change >= 0 ? 'text-green-600' : 'text-secondary'}`}>
                           {liveQuotes.get(investment.symbol).change >= 0 ? '+' : ''}
                           {liveQuotes.get(investment.symbol).change.toFixed(2)} 
                           ({liveQuotes.get(investment.symbol).changePercent.toFixed(2)}%)
@@ -141,7 +141,7 @@ export default function InvestmentDetailsModal({
                 <div className="flex justify-between">
                   <span className="text-gray-600">Minimum Investment:</span>
                   <span className="font-medium">
-                    {investment.currency} ${Number(investment.minimumInvestment).toLocaleString()}
+                    £{Number(investment.minimumInvestment).toLocaleString()}
                   </span>
                 </div>
                 
@@ -149,7 +149,7 @@ export default function InvestmentDetailsModal({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Maximum Investment:</span>
                     <span className="font-medium">
-                      {investment.currency} ${Number(investment.maximumInvestment).toLocaleString()}
+                      £{Number(investment.maximumInvestment).toLocaleString()}
                     </span>
                   </div>
                 )}
@@ -196,7 +196,7 @@ export default function InvestmentDetailsModal({
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     investment.isAvailable 
                       ? 'text-green-600 bg-green-100' 
-                      : 'text-red-600 bg-red-100'
+                      : 'text-secondary bg-secondary/10'
                   }`}>
                     {investment.isAvailable ? 'Available' : 'Not Available'}
                   </span>

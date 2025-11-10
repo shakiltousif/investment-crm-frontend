@@ -59,7 +59,7 @@ export default function TransactionHistoryTable({
     const rows = transactions.map((t) => [
       new Date(t.transactionDate).toLocaleDateString(),
       t.type,
-      `${t.amount} ${t.currency}`,
+      `£${t.amount}`,
       t.status,
       t.description,
     ]);
@@ -82,7 +82,7 @@ export default function TransactionHistoryTable({
       case 'PROCESSING':
         return 'bg-blue-100 text-blue-800';
       case 'FAILED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-secondary/10 text-secondary';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -95,7 +95,7 @@ export default function TransactionHistoryTable({
         return 'text-green-600';
       case 'SELL':
       case 'WITHDRAWAL':
-        return 'text-red-600';
+        return 'text-secondary';
       default:
         return 'text-gray-600';
     }
@@ -108,18 +108,18 @@ export default function TransactionHistoryTable({
   return (
     <div className="space-y-6">
       {/* Error Message */}
-      {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
+      {error && <div className="bg-secondary/10 text-secondary p-4 rounded-lg">{error}</div>}
 
       {/* Transactions Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-primary text-white border-b">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Date</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Type</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Description</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold">Amount</th>
-              <th className="px-6 py-3 text-center text-sm font-semibold">Status</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Date</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Description</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold uppercase tracking-wider">Amount</th>
+              <th className="px-6 py-3 text-center text-sm font-semibold uppercase tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -133,8 +133,7 @@ export default function TransactionHistoryTable({
                 </td>
                 <td className="px-6 py-4 text-sm">{transaction.description}</td>
                 <td className="px-6 py-4 text-right font-medium">
-                  {transaction.type === 'SELL' || transaction.type === 'WITHDRAWAL' ? '-' : '+'}
-                  {parseFloat(transaction.amount.toString()).toFixed(2)} {transaction.currency}
+                  {transaction.type === 'SELL' || transaction.type === 'WITHDRAWAL' ? '-' : '+'}£{parseFloat(transaction.amount.toString()).toFixed(2)}
                 </td>
                 <td className="px-6 py-4 text-center">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(transaction.status)}`}>

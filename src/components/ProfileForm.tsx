@@ -149,7 +149,7 @@ export default function ProfileForm() {
               }`}
             />
             {validationErrors.firstName && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.firstName}</p>
+              <p className="mt-1 text-sm text-secondary">{validationErrors.firstName}</p>
             )}
           </div>
           <div>
@@ -168,7 +168,7 @@ export default function ProfileForm() {
               }`}
             />
             {validationErrors.lastName && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.lastName}</p>
+              <p className="mt-1 text-sm text-secondary">{validationErrors.lastName}</p>
             )}
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function ProfileForm() {
             placeholder="+1234567890"
           />
           {validationErrors.phoneNumber && (
-            <p className="mt-1 text-sm text-red-600">{validationErrors.phoneNumber}</p>
+            <p className="mt-1 text-sm text-secondary">{validationErrors.phoneNumber}</p>
           )}
         </div>
 
@@ -253,7 +253,7 @@ export default function ProfileForm() {
                 placeholder="NY"
               />
               {validationErrors.state && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.state}</p>
+                <p className="mt-1 text-sm text-secondary">{validationErrors.state}</p>
               )}
           </div>
           <div>
@@ -272,7 +272,7 @@ export default function ProfileForm() {
                 placeholder="10001"
               />
               {validationErrors.zipCode && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.zipCode}</p>
+                <p className="mt-1 text-sm text-secondary">{validationErrors.zipCode}</p>
               )}
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function ProfileForm() {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Saving...' : 'Save Changes'}
           </button>

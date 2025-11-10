@@ -80,7 +80,7 @@ export default function LoginForm() {
             placeholder="you@example.com"
           />
           {validationErrors.email && (
-            <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+            <p className="mt-1 text-sm text-secondary">{validationErrors.email}</p>
           )}
         </div>
 
@@ -109,14 +109,14 @@ export default function LoginForm() {
             </button>
           </div>
           {validationErrors.password && (
-            <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+            <p className="mt-1 text-sm text-secondary">{validationErrors.password}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
@@ -125,14 +125,14 @@ export default function LoginForm() {
       <div className="mt-6 text-center">
         <p className="text-gray-600 text-sm">
           Don't have an account?{' '}
-          <Link href="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
+          <Link href="/register" className="text-primary hover:text-primary/80 font-medium">
             Sign up
           </Link>
         </p>
       </div>
 
       <div className="mt-4 text-center">
-        <Link href="/forgot-password" className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+        <Link href="/forgot-password" className="text-primary hover:text-primary/80 text-sm font-medium">
           Forgot password?
         </Link>
       </div>

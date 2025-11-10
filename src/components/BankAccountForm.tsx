@@ -22,7 +22,7 @@ export default function BankAccountForm({
     bankName: initialData?.bankName || '',
     bankCode: initialData?.bankCode || '',
     accountType: initialData?.accountType || 'Savings',
-    currency: initialData?.currency || 'USD',
+    currency: initialData?.currency || 'GBP',
   });
 
   const [error, setError] = useState('');
@@ -151,9 +151,8 @@ export default function BankAccountForm({
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           >
-            <option>USD</option>
-            <option>EUR</option>
             <option>GBP</option>
+            <option>EUR</option>
             <option>JPY</option>
           </select>
         </div>
@@ -163,7 +162,7 @@ export default function BankAccountForm({
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+          className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition disabled:opacity-50"
         >
           {loading ? 'Saving...' : isEditing ? 'Update Account' : 'Create Account'}
         </button>

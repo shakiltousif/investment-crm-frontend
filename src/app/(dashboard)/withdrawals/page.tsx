@@ -38,6 +38,10 @@ export default function WithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [withdrawalDetails, setWithdrawalDetails] = useState<any>(null);
   const [filters, setFilters] = useState({
     status: '',
     startDate: '',
@@ -111,16 +115,39 @@ export default function WithdrawalsPage() {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleViewDetails = async (withdrawal: Withdrawal) => {
+    setSelectedWithdrawal(withdrawal);
+    setShowDetailsModal(true);
+    setDetailsLoading(true);
+    setWithdrawalDetails(null);
+
+    try {
+      const response = await api.withdrawals.getById(withdrawal.id);
+      setWithdrawalDetails(response.data.data || response.data);
+    } catch (err: any) {
+      console.error('Failed to fetch withdrawal details:', err);
+      setError(err.response?.data?.message || 'Failed to load withdrawal details');
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setShowDetailsModal(false);
+    setSelectedWithdrawal(null);
+    setWithdrawalDetails(null);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'COMPLETED':
         return 'text-green-600 bg-green-100';
       case 'PROCESSING':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-primary bg-primary/10';
       case 'PENDING':
         return 'text-yellow-600 bg-yellow-100';
       case 'FAILED':
-        return 'text-red-600 bg-red-100';
+        return 'text-secondary bg-secondary/10';
       case 'CANCELLED':
         return 'text-gray-600 bg-gray-100';
       default:
@@ -132,7 +159,7 @@ export default function WithdrawalsPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading withdrawals...</p>
         </div>
       </div>
@@ -145,7 +172,7 @@ export default function WithdrawalsPage() {
         <h1 className="text-3xl font-bold text-gray-900">Withdrawals</h1>
         <button
           onClick={handleCreateWithdrawal}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
         >
           New Withdrawal
         </button>
@@ -156,7 +183,7 @@ export default function WithdrawalsPage() {
           <p className="text-red-700">{error}</p>
           <button 
             onClick={fetchWithdrawals}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90"
           >
             Retry
           </button>
@@ -185,7 +212,7 @@ export default function WithdrawalsPage() {
             <select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="">All Statuses</option>
               <option value="PENDING">Pending</option>
@@ -204,7 +231,7 @@ export default function WithdrawalsPage() {
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
           
@@ -216,7 +243,7 @@ export default function WithdrawalsPage() {
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
         </div>
@@ -229,7 +256,7 @@ export default function WithdrawalsPage() {
           <p className="text-gray-600 mb-4">Create your first withdrawal to transfer funds to your bank account.</p>
           <button
             onClick={handleCreateWithdrawal}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
           >
             Create Withdrawal
           </button>
@@ -253,7 +280,7 @@ export default function WithdrawalsPage() {
                   <tr key={withdrawal.id} className="hover:bg-gray-50">
                     <td className="py-4 px-6">
                       <div className="font-medium text-gray-900">
-                        {withdrawal.currency} ${withdrawal.amount.toLocaleString()}
+                        £{withdrawal.amount.toLocaleString()}
                       </div>
                     </td>
                     <td className="py-4 px-6">
@@ -289,12 +316,15 @@ export default function WithdrawalsPage() {
                         {(withdrawal.status === 'PENDING' || withdrawal.status === 'PROCESSING') && (
                           <button
                             onClick={() => handleCancelWithdrawal(withdrawal.id)}
-                            className="text-red-600 hover:text-red-800 text-sm"
+                            className="text-secondary hover:text-secondary/80 text-sm"
                           >
                             Cancel
                           </button>
                         )}
-                        <button className="text-indigo-600 hover:text-indigo-800 text-sm">
+                        <button
+                          onClick={() => handleViewDetails(withdrawal)}
+                          className="text-primary hover:text-primary/80 text-sm"
+                        >
                           View Details
                         </button>
                       </div>
@@ -303,6 +333,110 @@ export default function WithdrawalsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {showDetailsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Withdrawal Details</h2>
+                <button
+                  onClick={handleCloseDetails}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {detailsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : withdrawalDetails ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                      <p className="text-lg font-semibold text-gray-900">
+                        £{Number(withdrawalDetails.amount).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(withdrawalDetails.status)}`}>
+                        {withdrawalDetails.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {withdrawalDetails.bankAccount && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank Account</label>
+                      <p className="text-gray-900">
+                        {withdrawalDetails.bankAccount.bankName} - ****{withdrawalDetails.bankAccount.accountNumber?.slice(-4) || 'N/A'}
+                      </p>
+                      <p className="text-sm text-gray-500">Account Type: {withdrawalDetails.bankAccount.accountType}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Date</label>
+                      <p className="text-gray-900">
+                        {new Date(withdrawalDetails.transactionDate || withdrawalDetails.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    {withdrawalDetails.completedAt && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Completed At</label>
+                        <p className="text-gray-900">
+                          {new Date(withdrawalDetails.completedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {withdrawalDetails.description && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                      <p className="text-gray-900">{withdrawalDetails.description}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Created At</label>
+                      <p className="text-gray-900">
+                        {new Date(withdrawalDetails.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
+                      <p className="text-gray-900">
+                        {new Date(withdrawalDetails.updatedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600">Failed to load withdrawal details</p>
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={handleCloseDetails}
+                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

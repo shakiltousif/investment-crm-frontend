@@ -42,7 +42,7 @@ export default function AddEditInvestmentModal({
     currentPrice: 0,
     minimumInvestment: 0,
     maximumInvestment: 0,
-    currency: 'USD',
+    currency: 'GBP',
     riskLevel: 'MEDIUM',
     expectedReturn: 0,
     category: '',
@@ -87,7 +87,7 @@ export default function AddEditInvestmentModal({
         currentPrice: 0,
         minimumInvestment: 0,
         maximumInvestment: 0,
-        currency: 'USD',
+        currency: 'GBP',
         riskLevel: 'MEDIUM',
         expectedReturn: 0,
         category: '',
@@ -261,9 +261,8 @@ export default function AddEditInvestmentModal({
                 className="w-full px-3 py-2 border rounded-lg"
                 required
               >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
                 <option value="GBP">GBP</option>
+                <option value="EUR">EUR</option>
                 <option value="JPY">JPY</option>
                 <option value="CAD">CAD</option>
                 <option value="AUD">AUD</option>
@@ -401,7 +400,7 @@ export default function AddEditInvestmentModal({
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               {loading ? 'Saving...' : (isEdit ? 'Update Investment' : 'Add Investment')}
             </button>

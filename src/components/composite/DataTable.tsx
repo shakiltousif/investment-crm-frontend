@@ -197,13 +197,13 @@ export function DataTable<T extends Record<string, any>>({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
+                  <tr className="border-b bg-primary text-white">
                     {columns.map((column) => (
                       <th
                         key={String(column.key)}
                         className={cn(
-                          "px-4 py-3 text-left text-sm font-medium text-muted-foreground",
-                          column.sortable && "cursor-pointer hover:text-foreground",
+                          "px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider",
+                          column.sortable && "cursor-pointer hover:bg-primary/80",
                           column.className
                         )}
                         style={{ width: column.width }}
@@ -328,13 +328,13 @@ export function InvestmentTable({
       key: 'currentPrice',
       label: 'Current Price',
       sortable: true,
-      render: (value) => `$${value.toLocaleString()}`,
+      render: (value) => `£${value.toLocaleString()}`,
     },
     {
       key: 'totalValue',
       label: 'Total Value',
       sortable: true,
-      render: (value) => `$${value.toLocaleString()}`,
+      render: (value) => `£${value.toLocaleString()}`,
     },
     {
       key: 'totalGain',
@@ -346,7 +346,7 @@ export function InvestmentTable({
             "font-medium",
             value >= 0 ? "text-success" : "text-destructive"
           )}>
-            ${value.toLocaleString()}
+            £{value.toLocaleString()}
           </span>
           <span className={cn(
             "text-sm",

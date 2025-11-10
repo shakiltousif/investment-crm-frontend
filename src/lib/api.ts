@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -60,17 +60,23 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't try to refresh token during login/register/auth requests
+    const isAuthRequest = originalRequest?.url?.includes('/api/auth/login') || 
+                         originalRequest?.url?.includes('/api/auth/register') ||
+                         originalRequest?.url?.includes('/api/auth/refresh-token');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true;
 
       try {
         const refreshToken = getRefreshToken();
         if (!refreshToken) {
-          throw new Error('No refresh token available');
+          // Don't throw error, just reject the original request
+          return Promise.reject(error);
         }
 
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/refresh-token`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/refresh-token`,
           { refreshToken }
         );
 
@@ -81,9 +87,9 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, redirect to login
+        // Refresh failed, clear tokens but don't redirect if already on login page
         clearTokens();
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);
@@ -166,6 +172,11 @@ export const api = {
     deleteItem: (id: string) => apiClient.delete(`/api/marketplace/items/${id}`),
     getItem: (id: string) => apiClient.get(`/api/marketplace/items/${id}`),
     updatePrices: () => apiClient.post('/api/marketplace/update-prices'),
+    // Buy/Sell operations
+    buyPreview: (data: any) => apiClient.post('/api/marketplace/buy/preview', data),
+    buy: (data: any) => apiClient.post('/api/marketplace/buy', data),
+    sellPreview: (data: any) => apiClient.post('/api/marketplace/sell/preview', data),
+    sell: (data: any) => apiClient.post('/api/marketplace/sell', data),
   },
 
   // Quotes endpoints
@@ -204,6 +215,22 @@ export const api = {
     getDashboardData: () => apiClient.get('/api/analytics/dashboard'),
   },
 
+  // Admin endpoints
+  admin: {
+    getDashboard: () => apiClient.get('/api/admin/dashboard'),
+    getUsers: (params?: any) => apiClient.get('/api/admin/users', { params }),
+    getUserById: (id: string) => apiClient.get(`/api/admin/users/${id}`),
+    createUser: (data: any) => apiClient.post('/api/admin/users', data),
+    updateUser: (id: string, data: any) => apiClient.put(`/api/admin/users/${id}`, data),
+    deleteUser: (id: string) => apiClient.delete(`/api/admin/users/${id}`),
+    getPendingDeposits: (params?: any) => apiClient.get('/api/admin/deposits/pending', { params }),
+    getPendingWithdrawals: (params?: any) => apiClient.get('/api/admin/withdrawals/pending', { params }),
+    getAllTransactions: (params?: any) => apiClient.get('/api/admin/transactions', { params }),
+    approveTransaction: (id: string, notes?: string) => apiClient.post(`/api/admin/transactions/${id}/approve`, { notes }),
+    rejectTransaction: (id: string, notes?: string) => apiClient.post(`/api/admin/transactions/${id}/reject`, { notes }),
+    adjustUserBalance: (userId: string, data: any) => apiClient.post(`/api/admin/users/${userId}/balance/adjust`, data),
+  },
+
   // Two-Factor Authentication endpoints
   twoFactor: {
     setup: () => apiClient.post('/api/2fa/setup'),
@@ -217,6 +244,55 @@ export const api = {
     getAll: (params?: any) => apiClient.get('/api/audit-logs', { params }),
     getById: (id: string) => apiClient.get(`/api/audit-logs/${id}`),
     export: (params?: any) => apiClient.get('/api/audit-logs/export', { params }),
+  },
+
+  // Document endpoints
+  documents: {
+    upload: (formData: FormData) => apiClient.post('/api/documents', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+    getAll: (params?: any) => apiClient.get('/api/documents', { params }),
+    getById: (id: string) => apiClient.get(`/api/documents/${id}`),
+    delete: (id: string) => apiClient.delete(`/api/documents/${id}`),
+    uploadStatement: (formData: FormData) => apiClient.post('/api/documents/statements', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+    getStatements: (params?: any) => apiClient.get('/api/documents/statements', { params }),
+    getStatementById: (id: string) => apiClient.get(`/api/documents/statements/${id}`),
+    deleteStatement: (id: string) => apiClient.delete(`/api/documents/statements/${id}`),
+  },
+
+  // Support endpoints
+  support: {
+    getInfo: () => apiClient.get('/api/support'),
+    getSettings: () => apiClient.get('/api/support/settings'),
+    getSettingByKey: (key: string) => apiClient.get(`/api/support/settings/${key}`),
+    createSetting: (data: any) => apiClient.post('/api/support/settings', data),
+    updateSetting: (key: string, data: any) => apiClient.put(`/api/support/settings/${key}`, data),
+    deleteSetting: (key: string) => apiClient.delete(`/api/support/settings/${key}`),
+  },
+
+  // Report endpoints
+  reports: {
+    getPortfolioReport: (params?: any) => apiClient.get('/api/reports/portfolio', { params }),
+    getPortfolioReportCSV: (params?: any) => apiClient.get('/api/reports/portfolio/csv', { params, responseType: 'blob' }),
+  },
+
+  // Investment Product endpoints
+  investmentProducts: {
+    // Product creation (admin)
+    createBond: (data: any) => apiClient.post('/api/investment-products/bonds', data),
+    createSavings: (data: any) => apiClient.post('/api/investment-products/savings', data),
+    createIPO: (data: any) => apiClient.post('/api/investment-products/ipo', data),
+    createFixedDeposit: (data: any) => apiClient.post('/api/investment-products/fixed-deposits', data),
+    // Applications
+    createApplication: (data: any) => apiClient.post('/api/investment-products/applications', data),
+    getApplications: (params?: any) => apiClient.get('/api/investment-products/applications', { params }),
+    getApplicationById: (id: string) => apiClient.get(`/api/investment-products/applications/${id}`),
+    // Calculators
+    getBondPayoutSchedule: (id: string, investmentAmount: number) => apiClient.get(`/api/investment-products/bonds/${id}/payout-schedule`, { params: { investmentAmount } }),
+    getSavingsInterest: (id: string, balance: number, days?: number) => apiClient.get(`/api/investment-products/savings/${id}/interest`, { params: { balance, days } }),
+    getFixedDepositMaturity: (id: string, investmentAmount: number) => apiClient.get(`/api/investment-products/fixed-deposits/${id}/maturity`, { params: { investmentAmount } }),
   },
 };
 

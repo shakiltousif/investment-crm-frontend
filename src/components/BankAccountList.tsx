@@ -39,13 +39,7 @@ export default function BankAccountList({
     return (
       <div className="bg-white rounded-lg shadow p-8 text-center">
         <h3 className="text-lg font-medium text-gray-900 mb-2">No bank accounts found</h3>
-        <p className="text-gray-600 mb-4">Add your first bank account to start managing your finances.</p>
-        <button
-          onClick={onRefresh}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-        >
-          Add Bank Account
-        </button>
+        <p className="text-gray-600">Add your first bank account to start managing your finances.</p>
       </div>
     );
   }
@@ -56,7 +50,7 @@ export default function BankAccountList({
         <div
           key={account.id}
           className={`bg-white rounded-lg shadow p-6 border-l-4 ${
-            account.isPrimary ? 'border-green-500' : 'border-indigo-600'
+            account.isPrimary ? 'border-green-500' : 'border-primary'
           }`}
         >
           <div className="flex justify-between items-start mb-4">
@@ -96,7 +90,7 @@ export default function BankAccountList({
             <div>
               <p className="text-gray-600 text-sm">Balance</p>
               <p className="text-gray-900 font-medium">
-                {account.currency} ${account.balance.toLocaleString()}
+                £{account.balance.toLocaleString()}
               </p>
             </div>
             <div>
@@ -117,7 +111,7 @@ export default function BankAccountList({
             {!account.isVerified && onVerify && (
               <button
                 onClick={() => onVerify(account.id)}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition"
+                className="px-3 py-1 text-sm bg-primary/10 text-primary rounded hover:bg-primary/20 transition"
               >
                 Verify Account
               </button>
@@ -125,7 +119,7 @@ export default function BankAccountList({
             {onEdit && (
               <button
                 onClick={() => onEdit(account)}
-                className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition"
+                className="px-3 py-1 text-sm bg-primary/10 text-primary rounded hover:bg-primary/20 transition"
               >
                 Edit
               </button>
@@ -133,7 +127,7 @@ export default function BankAccountList({
             {onDelete && (
               <button
                 onClick={() => onDelete(account.id)}
-                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
+                className="px-3 py-1 text-sm bg-secondary/10 text-secondary rounded hover:bg-secondary/20 transition"
               >
                 Delete
               </button>

@@ -158,7 +158,7 @@ export default function SellInvestmentModal({
                 <p className="font-semibold text-lg">{investment.name}</p>
                 {investment.symbol && <p className="text-sm text-gray-500">{investment.symbol}</p>}
                 <p className="text-sm text-gray-600 mt-2">
-                  Current Price: ${parseFloat(investment.currentPrice.toString()).toFixed(2)}
+                  Current Price: £{parseFloat(investment.currentPrice.toString()).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-600">
                   Available: {parseFloat(investment.quantity.toString()).toFixed(4)} units
@@ -180,7 +180,7 @@ export default function SellInvestmentModal({
                   className="w-full px-3 py-2 border rounded-lg"
                 />
                 {!isValidQuantity && quantity > 0 && (
-                  <p className="text-red-600 text-sm mt-1">Quantity exceeds available amount</p>
+                  <p className="text-secondary text-sm mt-1">Quantity exceeds available amount</p>
                 )}
               </div>
 
@@ -190,19 +190,19 @@ export default function SellInvestmentModal({
                   <div className="flex justify-between">
                     <span className="text-sm">Total Proceeds:</span>
                     <span className="font-semibold">
-                      ${parseFloat(preview.totalProceeds.toString()).toFixed(2)}
+                      £{parseFloat(preview.totalProceeds.toString()).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Fee (1%):</span>
                     <span className="font-semibold">
-                      -${parseFloat(preview.estimatedFee.toString()).toFixed(2)}
+                      -£{parseFloat(preview.estimatedFee.toString()).toFixed(2)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Net Proceeds:</span>
                     <span className="font-bold text-lg">
-                      ${parseFloat(preview.netProceeds.toString()).toFixed(2)}
+                      £{parseFloat(preview.netProceeds.toString()).toFixed(2)}
                     </span>
                   </div>
                   <div className="border-t pt-2">
@@ -210,17 +210,17 @@ export default function SellInvestmentModal({
                       <span className="text-sm">Gain/Loss:</span>
                       <span
                         className={`font-semibold ${
-                          preview.gainLoss >= 0 ? 'text-green-600' : 'text-red-600'
+                          preview.gainLoss >= 0 ? 'text-green-600' : 'text-secondary'
                         }`}
                       >
-                        {preview.gainLoss >= 0 ? '+' : ''}${parseFloat(preview.gainLoss.toString()).toFixed(2)}
+                        {preview.gainLoss >= 0 ? '+' : ''}£{parseFloat(preview.gainLoss.toString()).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Return %:</span>
                       <span
                         className={`font-semibold ${
-                          preview.gainLossPercentage >= 0 ? 'text-green-600' : 'text-red-600'
+                          preview.gainLossPercentage >= 0 ? 'text-green-600' : 'text-secondary'
                         }`}
                       >
                         {preview.gainLossPercentage >= 0 ? '+' : ''}
@@ -249,23 +249,23 @@ export default function SellInvestmentModal({
                 <div className="flex justify-between">
                   <span>Unit Price:</span>
                   <span className="font-semibold">
-                    ${parseFloat(preview.unitPrice.toString()).toFixed(2)}
+                    £{parseFloat(preview.unitPrice.toString()).toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-medium">Net Proceeds:</span>
                   <span className="font-bold text-lg">
-                    ${parseFloat(preview.netProceeds.toString()).toFixed(2)}
+                    £{parseFloat(preview.netProceeds.toString()).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Gain/Loss:</span>
                   <span
                     className={`font-bold ${
-                      preview.gainLoss >= 0 ? 'text-green-600' : 'text-red-600'
+                      preview.gainLoss >= 0 ? 'text-green-600' : 'text-secondary'
                     }`}
                   >
-                    {preview.gainLoss >= 0 ? '+' : ''}${parseFloat(preview.gainLoss.toString()).toFixed(2)}
+                    {preview.gainLoss >= 0 ? '+' : ''}£{parseFloat(preview.gainLoss.toString()).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default function SellInvestmentModal({
             <button
               onClick={() => setStep('preview')}
               disabled={!isValidQuantity}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               Review
             </button>
@@ -302,7 +302,7 @@ export default function SellInvestmentModal({
             <button
               onClick={handleSell}
               disabled={loading}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+              className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 disabled:opacity-50"
             >
               {loading ? 'Processing...' : 'Confirm Sale'}
             </button>

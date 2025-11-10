@@ -77,7 +77,7 @@ export default function TransactionList({ onExport }: TransactionListProps) {
             <select
               value={filters.type}
               onChange={(e) => handleFilterChange('type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="All Types">All Types</option>
               <option value="Deposit">Deposit</option>
@@ -97,7 +97,7 @@ export default function TransactionList({ onExport }: TransactionListProps) {
             <select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="All Statuses">All Statuses</option>
               <option value="Pending">Pending</option>
@@ -115,7 +115,7 @@ export default function TransactionList({ onExport }: TransactionListProps) {
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
           <div>
@@ -126,7 +126,7 @@ export default function TransactionList({ onExport }: TransactionListProps) {
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function TransactionList({ onExport }: TransactionListProps) {
           <h3 className="text-lg font-semibold text-gray-900">Your Transactions</h3>
           <button
             onClick={handleExport}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
           >
             Export CSV
           </button>
@@ -146,21 +146,21 @@ export default function TransactionList({ onExport }: TransactionListProps) {
         
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-primary text-white">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Description
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Status
                 </th>
               </tr>
@@ -178,7 +178,7 @@ export default function TransactionList({ onExport }: TransactionListProps) {
                     {transaction.description}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.amount >= 0 ? '+' : ''}{transaction.amount.toFixed(2)} {transaction.currency}
+                    {transaction.amount >= 0 ? '+' : ''}£{transaction.amount.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -187,7 +187,7 @@ export default function TransactionList({ onExport }: TransactionListProps) {
                         : transaction.status === 'PENDING'
                         ? 'bg-yellow-100 text-yellow-800'
                         : transaction.status === 'FAILED'
-                        ? 'bg-red-100 text-red-800'
+                        ? 'bg-secondary/10 text-secondary'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
                       {transaction.status}

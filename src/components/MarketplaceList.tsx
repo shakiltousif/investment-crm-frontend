@@ -24,6 +24,7 @@ interface MarketplaceInvestment {
 interface MarketplaceListProps {
   investments: MarketplaceInvestment[];
   onBuy?: (investment: MarketplaceInvestment) => void;
+  onApply?: (investment: MarketplaceInvestment) => void;
   onEdit?: (investment: MarketplaceInvestment) => void;
   onDetails?: (investment: MarketplaceInvestment) => void;
   onRefresh?: () => void;
@@ -33,6 +34,7 @@ interface MarketplaceListProps {
 export default function MarketplaceList({
   investments,
   onBuy,
+  onApply,
   onEdit,
   onDetails,
   onRefresh,
@@ -45,7 +47,7 @@ export default function MarketplaceList({
       case 'MEDIUM':
         return 'text-yellow-600 bg-yellow-100';
       case 'HIGH':
-        return 'text-red-600 bg-red-100';
+        return 'text-secondary bg-secondary/10';
       default:
         return 'text-gray-600 bg-gray-100';
     }
@@ -54,15 +56,21 @@ export default function MarketplaceList({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'STOCK':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-primary bg-primary/10';
       case 'BOND':
+      case 'CORPORATE_BOND':
         return 'text-purple-600 bg-purple-100';
       case 'TERM_DEPOSIT':
+      case 'FIXED_RATE_DEPOSIT':
         return 'text-green-600 bg-green-100';
+      case 'HIGH_INTEREST_SAVINGS':
+        return 'text-emerald-600 bg-emerald-100';
+      case 'IPO':
+        return 'text-orange-600 bg-orange-100';
       case 'PRIVATE_EQUITY':
         return 'text-orange-600 bg-orange-100';
       case 'MUTUAL_FUND':
-        return 'text-indigo-600 bg-indigo-100';
+        return 'text-primary bg-primary/10';
       case 'ETF':
         return 'text-cyan-600 bg-cyan-100';
       case 'CRYPTOCURRENCY':
@@ -70,6 +78,10 @@ export default function MarketplaceList({
       default:
         return 'text-gray-600 bg-gray-100';
     }
+  };
+
+  const isApplicationBased = (type: string) => {
+    return type === 'IPO';
   };
 
   if (investments.length === 0) {
@@ -80,7 +92,7 @@ export default function MarketplaceList({
         {onRefresh && (
           <button
             onClick={onRefresh}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
           >
             Refresh
           </button>
@@ -125,11 +137,11 @@ export default function MarketplaceList({
               <span className="text-gray-600 text-sm">Current Price:</span>
               <div className="text-right">
                 <span className="font-medium">
-                  {investment.currency} ${Number(investment.currentPrice).toLocaleString()}
+                  £{Number(investment.currentPrice).toLocaleString()}
                 </span>
                 {investment.symbol && liveQuotes.has(investment.symbol) && (
                   <div className="text-xs">
-                    <span className={`${liveQuotes.get(investment.symbol).change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`${liveQuotes.get(investment.symbol).change >= 0 ? 'text-green-600' : 'text-secondary'}`}>
                       {liveQuotes.get(investment.symbol).change >= 0 ? '+' : ''}
                       {liveQuotes.get(investment.symbol).change.toFixed(2)} 
                       ({liveQuotes.get(investment.symbol).changePercent.toFixed(2)}%)
@@ -143,7 +155,7 @@ export default function MarketplaceList({
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Min Investment:</span>
               <span className="font-medium">
-                {investment.currency} ${Number(investment.minimumInvestment).toLocaleString()}
+                £{Number(investment.minimumInvestment).toLocaleString()}
               </span>
             </div>
             
@@ -151,7 +163,7 @@ export default function MarketplaceList({
               <div className="flex justify-between">
                 <span className="text-gray-600 text-sm">Max Investment:</span>
                 <span className="font-medium">
-                  {investment.currency} ${Number(investment.maximumInvestment).toLocaleString()}
+                  £{Number(investment.maximumInvestment).toLocaleString()}
                 </span>
               </div>
             )}
@@ -180,13 +192,13 @@ export default function MarketplaceList({
               <>
                 <button
                   onClick={() => onBuy?.(investment)}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
                 >
                   Invest Now
                 </button>
                 <button 
                   onClick={() => onEdit?.(investment)}
-                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                  className="px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition"
                 >
                   Edit
                 </button>
@@ -207,7 +219,7 @@ export default function MarketplaceList({
                 </button>
                 <button 
                   onClick={() => onEdit?.(investment)}
-                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                  className="px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition"
                 >
                   Edit
                 </button>

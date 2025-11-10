@@ -129,7 +129,7 @@ export default function PortfolioPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading portfolios...</p>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function PortfolioPage() {
         <h1 className="text-3xl font-bold text-gray-900">Portfolios</h1>
         <button
           onClick={handleCreatePortfolio}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
         >
           Create Portfolio
         </button>
@@ -153,7 +153,7 @@ export default function PortfolioPage() {
           <p className="text-red-700">{error}</p>
           <button 
             onClick={fetchPortfolios}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90"
           >
             Retry
           </button>
@@ -180,7 +180,7 @@ export default function PortfolioPage() {
           <p className="text-gray-600 mb-4">Create your first portfolio to start tracking your investments.</p>
           <button
             onClick={handleCreatePortfolio}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
           >
             Create Portfolio
           </button>
@@ -194,13 +194,13 @@ export default function PortfolioPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEditPortfolio(portfolio)}
-                    className="text-indigo-600 hover:text-indigo-800 text-sm"
+                    className="text-primary hover:text-primary/80 text-sm"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDeletePortfolio(portfolio.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
+                    className="text-secondary hover:text-secondary/80 text-sm"
                   >
                     Delete
                   </button>
@@ -214,21 +214,21 @@ export default function PortfolioPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600 text-sm">Total Value:</span>
-                  <span className="font-medium">${portfolio.totalValue.toLocaleString()}</span>
+                  <span className="font-medium">£{portfolio.totalValue.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 text-sm">Total Invested:</span>
-                  <span className="font-medium">${portfolio.totalInvested.toLocaleString()}</span>
+                  <span className="font-medium">£{portfolio.totalInvested.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 text-sm">Total Gain:</span>
-                  <span className={`font-medium ${portfolio.totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${portfolio.totalGain.toLocaleString()}
+                  <span className={`font-medium ${portfolio.totalGain >= 0 ? 'text-green-600' : 'text-secondary'}`}>
+                    £{portfolio.totalGain.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 text-sm">Gain %:</span>
-                  <span className={`font-medium ${portfolio.gainPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`font-medium ${portfolio.gainPercentage >= 0 ? 'text-green-600' : 'text-secondary'}`}>
                     {portfolio.gainPercentage.toFixed(2)}%
                   </span>
                 </div>
@@ -237,7 +237,7 @@ export default function PortfolioPage() {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>Created: {new Date(portfolio.createdAt).toLocaleDateString()}</span>
-                  <span className={portfolio.isActive ? 'text-green-600' : 'text-red-600'}>
+                  <span className={portfolio.isActive ? 'text-green-600' : 'text-secondary'}>
                     {portfolio.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>

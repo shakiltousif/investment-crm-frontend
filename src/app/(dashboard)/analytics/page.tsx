@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading analytics...</p>
         </div>
       </div>
@@ -169,7 +169,7 @@ export default function AnalyticsPage() {
           </select>
           <button
             onClick={exportAnalytics}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
           >
             Export Report
           </button>
@@ -181,7 +181,7 @@ export default function AnalyticsPage() {
           <p className="text-red-700">{error}</p>
           <button 
             onClick={fetchAnalyticsData}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90"
           >
             Retry
           </button>
@@ -228,14 +228,14 @@ export default function AnalyticsPage() {
                   {analyticsData.investmentPerformance.map((investment, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="py-4 px-6 font-medium text-gray-900">{investment.name}</td>
-                      <td className="py-4 px-6 text-gray-900">${investment.value.toLocaleString()}</td>
+                      <td className="py-4 px-6 text-gray-900">£{investment.value.toLocaleString()}</td>
                       <td className="py-4 px-6">
-                        <span className={`font-medium ${investment.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ${investment.change.toLocaleString()}
+                        <span className={`font-medium ${investment.change >= 0 ? 'text-green-600' : 'text-secondary'}`}>
+                          £{investment.change.toLocaleString()}
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className={`font-medium ${investment.changePercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`font-medium ${investment.changePercentage >= 0 ? 'text-green-600' : 'text-secondary'}`}>
                           {investment.changePercentage >= 0 ? '+' : ''}{investment.changePercentage.toFixed(2)}%
                         </span>
                       </td>

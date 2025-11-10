@@ -109,23 +109,23 @@ export function StatCard({
           </p>
         )}
         {change && (
-          <div className="flex items-center mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge 
               variant={getTrendBadgeVariant()} 
-              className="text-xs"
+              className="text-xs font-medium"
             >
               <div className="flex items-center gap-1">
                 {getTrendIcon()}
-                <span className={cn(getTrendColor())}>
+                <span className="text-white font-semibold">
                   {change.value > 0 ? '+' : ''}{change.value}%
                 </span>
+                {change.period && (
+                  <span className="text-white font-medium whitespace-nowrap ml-1">
+                    {change.period}
+                  </span>
+                )}
               </div>
             </Badge>
-            {change.period && (
-              <span className="text-xs text-muted-foreground ml-2">
-                {change.period}
-              </span>
-            )}
           </div>
         )}
       </CardContent>
@@ -146,7 +146,7 @@ export function PortfolioValueCard({
   return (
     <StatCard
       title="Portfolio Value"
-      value={`$${value.toLocaleString()}`}
+      value={`£${value.toLocaleString()}`}
       change={change}
       icon={TrendingUp}
       loading={loading}
@@ -166,7 +166,7 @@ export function TotalGainCard({
   return (
     <StatCard
       title="Total Gain/Loss"
-      value={`$${value.toLocaleString()}`}
+      value={`£${value.toLocaleString()}`}
       change={change}
       icon={value >= 0 ? TrendingUp : TrendingDown}
       loading={loading}

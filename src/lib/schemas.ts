@@ -84,21 +84,21 @@ export const bankAccountSchema = z.object({
 export const buyInvestmentSchema = z.object({
   investmentId: z.string().min(1, 'Investment ID is required'),
   portfolioId: z.string().min(1, 'Portfolio is required'),
-  quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
-  purchasePrice: z.number().min(0.01, 'Purchase price must be greater than 0'),
+  quantity: z.coerce.number().min(0.01, 'Quantity must be greater than 0'),
+  purchasePrice: z.coerce.number().min(0.01, 'Purchase price must be greater than 0'),
   bankAccountId: z.string().min(1, 'Bank account is required'),
 });
 
 export const sellInvestmentSchema = z.object({
   investmentId: z.string().min(1, 'Investment ID is required'),
-  quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
-  sellPrice: z.number().min(0.01, 'Sell price must be greater than 0'),
+  quantity: z.coerce.number().min(0.01, 'Quantity must be greater than 0'),
+  sellPrice: z.coerce.number().min(0.01, 'Sell price must be greater than 0'),
   bankAccountId: z.string().min(1, 'Bank account is required'),
 });
 
 // Transaction schemas
 export const depositSchema = z.object({
-  amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  amount: z.coerce.number().min(0.01, 'Amount must be greater than 0'),
   currency: z.string().min(1, 'Currency is required'),
   bankAccountId: z.string().min(1, 'Bank account is required'),
   transferMethod: z.string().min(1, 'Transfer method is required'),
@@ -106,7 +106,7 @@ export const depositSchema = z.object({
 });
 
 export const withdrawalSchema = z.object({
-  amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  amount: z.coerce.number().min(0.01, 'Amount must be greater than 0'),
   currency: z.string().min(1, 'Currency is required'),
   bankAccountId: z.string().min(1, 'Bank account is required'),
   description: z.string().optional(),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '@/lib/api';
 
 interface Investment {
   id: string;
@@ -56,25 +56,30 @@ export default function BuyInvestmentModal({
       setError(null);
       console.log('Fetching preview for:', { investmentId: investment.id, quantity, portfolioId: selectedPortfolio });
       
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/marketplace/buy/preview`,
-        {
-          investmentId: investment.id,
-          quantity,
-          portfolioId: selectedPortfolio,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          },
-        },
-      );
+      const response = await api.marketplace.buyPreview({
+        investmentId: investment.id,
+        quantity,
+        portfolioId: selectedPortfolio,
+      });
       
       console.log('Preview response:', response.data);
-      setPreview(response.data.data || response.data);
+      // Backend returns the preview directly, not wrapped in data
+      const previewData = response.data.data || response.data;
+      // Convert Decimal values to numbers if needed
+      setPreview({
+        ...previewData,
+        totalCost: typeof previewData.totalCost === 'object' ? Number(previewData.totalCost) : previewData.totalCost,
+        estimatedFee: typeof previewData.estimatedFee === 'object' ? Number(previewData.estimatedFee) : previewData.estimatedFee,
+        totalAmount: typeof previewData.totalAmount === 'object' ? Number(previewData.totalAmount) : previewData.totalAmount,
+        unitPrice: typeof previewData.unitPrice === 'object' ? Number(previewData.unitPrice) : previewData.unitPrice,
+      });
     } catch (err: any) {
       console.error('Preview fetch error:', err);
-      setError(err.response?.data?.message || 'Failed to fetch preview');
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        setError('Unable to connect to server. Please ensure the backend is running on http://localhost:3001');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Failed to fetch preview');
+      }
     }
   };
 
@@ -83,19 +88,11 @@ export default function BuyInvestmentModal({
       setLoading(true);
       setError(null);
 
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/marketplace/buy`,
-        {
-          investmentId: investment.id,
-          quantity,
-          portfolioId: selectedPortfolio,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          },
-        },
-      );
+      await api.marketplace.buy({
+        investmentId: investment.id,
+        quantity,
+        portfolioId: selectedPortfolio,
+      });
 
       setStep('confirm');
       setTimeout(() => {
@@ -103,7 +100,11 @@ export default function BuyInvestmentModal({
         onClose();
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to buy investment');
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        setError('Unable to connect to server. Please ensure the backend is running on http://localhost:3001');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Failed to buy investment');
+      }
     } finally {
       setLoading(false);
     }
@@ -135,7 +136,7 @@ export default function BuyInvestmentModal({
                 <p className="font-semibold text-lg">{investment.name}</p>
                 {investment.symbol && <p className="text-sm text-gray-500">{investment.symbol}</p>}
                 <p className="text-sm text-gray-600 mt-2">
-                  Current Price: ${parseFloat(investment.currentPrice.toString()).toFixed(2)}
+                  Current Price: £{parseFloat(investment.currentPrice.toString()).toFixed(2)}
                 </p>
               </div>
 
@@ -180,19 +181,19 @@ export default function BuyInvestmentModal({
                   <div className="flex justify-between">
                     <span className="text-sm">Total Cost:</span>
                     <span className="font-semibold">
-                      ${parseFloat(preview.totalCost.toString()).toFixed(2)}
+                      £{parseFloat(preview.totalCost.toString()).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Fee (1%):</span>
                     <span className="font-semibold">
-                      ${parseFloat(preview.estimatedFee.toString()).toFixed(2)}
+                      £{parseFloat(preview.estimatedFee.toString()).toFixed(2)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Total Amount:</span>
                     <span className="font-bold text-lg">
-                      ${parseFloat(preview.totalAmount.toString()).toFixed(2)}
+                      £{parseFloat(preview.totalAmount.toString()).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -204,19 +205,19 @@ export default function BuyInvestmentModal({
                   <div className="flex justify-between">
                     <span className="text-sm">Total Cost:</span>
                     <span className="font-semibold">
-                      ${(quantity * parseFloat(investment.currentPrice.toString())).toFixed(2)}
+                      £{(quantity * parseFloat(investment.currentPrice.toString())).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Fee (1%):</span>
                     <span className="font-semibold">
-                      ${(quantity * parseFloat(investment.currentPrice.toString()) * 0.01).toFixed(2)}
+                      £{(quantity * parseFloat(investment.currentPrice.toString()) * 0.01).toFixed(2)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Total Amount:</span>
                     <span className="font-bold text-lg">
-                      ${(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
+                      £{(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -246,13 +247,13 @@ export default function BuyInvestmentModal({
                 <div className="flex justify-between">
                   <span>Unit Price:</span>
                   <span className="font-semibold">
-                    ${parseFloat(investment.currentPrice.toString()).toFixed(2)}
+                    £{parseFloat(investment.currentPrice.toString()).toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-medium">Total Amount:</span>
                   <span className="font-bold text-lg">
-                    ${(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
+                    £{(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -287,7 +288,7 @@ export default function BuyInvestmentModal({
             <button
               onClick={() => setStep('preview')}
               disabled={portfolios.length === 0 || !selectedPortfolio || quantity <= 0}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Review
             </button>

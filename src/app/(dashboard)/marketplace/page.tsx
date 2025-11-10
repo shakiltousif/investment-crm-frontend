@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import MarketplaceList from '@/components/MarketplaceList';
 import BuyInvestmentModal from '@/components/BuyInvestmentModal';
+import InvestmentApplicationModal from '@/components/InvestmentApplicationModal';
 import AddEditInvestmentModal from '@/components/AddEditInvestmentModal';
 import InvestmentDetailsModal from '@/components/InvestmentDetailsModal';
 
@@ -34,6 +35,7 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showAddEditModal, setShowAddEditModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedInvestment, setSelectedInvestment] = useState<MarketplaceInvestment | null>(null);
@@ -96,7 +98,7 @@ export default function MarketplacePage() {
           currentPrice: 175.50,
           minimumInvestment: 100,
           maximumInvestment: 100000,
-          currency: 'USD',
+          currency: 'GBP',
           riskLevel: 'MEDIUM',
           expectedReturn: 8.5,
           isAvailable: true,
@@ -113,7 +115,7 @@ export default function MarketplacePage() {
           currentPrice: 245.30,
           minimumInvestment: 100,
           maximumInvestment: 100000,
-          currency: 'USD',
+          currency: 'GBP',
           riskLevel: 'HIGH',
           expectedReturn: 12.0,
           isAvailable: true,
@@ -130,7 +132,7 @@ export default function MarketplacePage() {
           currentPrice: 98.50,
           minimumInvestment: 1000,
           maximumInvestment: 1000000,
-          currency: 'USD',
+          currency: 'GBP',
           riskLevel: 'LOW',
           expectedReturn: 4.2,
           maturityDate: '2034-01-01',
@@ -163,6 +165,11 @@ export default function MarketplacePage() {
   const handleBuyInvestment = (investment: MarketplaceInvestment) => {
     setSelectedInvestment(investment);
     setShowBuyModal(true);
+  };
+
+  const handleApplyInvestment = (investment: MarketplaceInvestment) => {
+    setSelectedInvestment(investment);
+    setShowApplicationModal(true);
   };
 
   const handleModalClose = () => {
@@ -249,7 +256,7 @@ export default function MarketplacePage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading marketplace...</p>
         </div>
       </div>
@@ -275,7 +282,7 @@ export default function MarketplacePage() {
             </button>
             <button
               onClick={handleAddInvestment}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
             >
               Add Investment
             </button>
@@ -288,7 +295,7 @@ export default function MarketplacePage() {
           <p className="text-red-700">{error}</p>
           <button 
             onClick={fetchMarketplaceInvestments}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90"
           >
             Retry
           </button>
@@ -301,7 +308,7 @@ export default function MarketplacePage() {
           <h2 className="text-lg font-semibold text-gray-900">Filter Investments</h2>
           <button
             onClick={clearFilters}
-            className="text-sm text-indigo-600 hover:text-indigo-800"
+            className="text-sm text-primary hover:text-primary/80"
           >
             Clear Filters
           </button>
@@ -406,6 +413,7 @@ export default function MarketplacePage() {
         <MarketplaceList
           investments={investments}
           onBuy={handleBuyInvestment}
+          onApply={handleApplyInvestment}
           onEdit={handleEditInvestment}
           onDetails={handleDetailsInvestment}
           onRefresh={fetchMarketplaceInvestments}
@@ -430,6 +438,19 @@ export default function MarketplacePage() {
           isOpen={showAddEditModal}
           onClose={handleAddEditModalClose}
           onSuccess={handleAddEditModalSuccess}
+        />
+      )}
+
+      {/* Investment Application Modal */}
+      {showApplicationModal && selectedInvestment && (
+        <InvestmentApplicationModal
+          investment={selectedInvestment}
+          isOpen={showApplicationModal}
+          onClose={() => {
+            setShowApplicationModal(false);
+            setSelectedInvestment(null);
+          }}
+          onSuccess={fetchMarketplaceInvestments}
         />
       )}
 

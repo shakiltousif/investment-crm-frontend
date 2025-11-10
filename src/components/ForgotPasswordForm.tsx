@@ -49,7 +49,7 @@ export default function ForgotPasswordForm() {
               setSuccess(false);
               setEmail('');
             }}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition"
+            className="w-full bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary/90 transition"
           >
             Send Another Email
           </button>
@@ -90,7 +90,7 @@ export default function ForgotPasswordForm() {
         <button
           type="submit"
           disabled={loading || !email}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Sending...' : 'Send Reset Link'}
         </button>
@@ -101,7 +101,7 @@ export default function ForgotPasswordForm() {
           Remember your password?{' '}
           <button
             onClick={() => router.push('/login')}
-            className="text-indigo-600 hover:text-indigo-800 font-medium"
+            className="text-primary hover:text-primary/80 font-medium"
           >
             Sign in
           </button>

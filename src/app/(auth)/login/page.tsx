@@ -4,93 +4,187 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const [step, setStep] = useState<'username' | 'password'>('username');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleUsernameNext = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    setError('');
+    
+    if (email.trim().length === 0) {
+      setError('Please enter your username');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setStep('password');
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Prevent multiple submissions
+    if (loading) {
+      return;
+    }
+    
     setError('');
     setLoading(true);
 
     try {
       await login(email, password);
-      // Redirect to dashboard after successful login
-      router.push('/dashboard');
+      // Get user profile to check role and redirect accordingly
+      try {
+        const profileResponse = await api.users.getProfile();
+        const userRole = profileResponse.data.data?.role || 'CLIENT';
+        if (userRole === 'ADMIN') {
+          router.replace('/admin');
+        } else {
+          router.replace('/dashboard');
+        }
+      } catch (profileError) {
+        // If profile fetch fails, try to use role from login response
+        // Fallback to dashboard
+        router.replace('/dashboard');
+      }
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      console.error('Login error:', err);
+      // Extract error message from various possible locations
+      const errorMessage = 
+        err?.message || 
+        err?.response?.data?.message || 
+        err?.response?.data?.error ||
+        err?.response?.data?.data?.message ||
+        'Login failed. Please check your credentials.';
+      setError(errorMessage);
+      // Clear password on error for security, but keep email and stay on password step
+      setPassword('');
+      // Ensure we stay on password step - don't reset to username step
+      // Don't redirect or reload - just show the error
     } finally {
       setLoading(false);
     }
   };
 
+  const handleBack = () => {
+    setStep('username');
+    setPassword('');
+    setError('');
+  };
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Sign In</h2>
-
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-            placeholder="you@example.com"
-          />
-        </div>
+      {step === 'username' ? (
+        <form onSubmit={handleUsernameNext} className="space-y-5" noValidate>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+              placeholder="Enter your username"
+              autoComplete="username"
+              autoFocus
+            />
+          </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-            placeholder="••••••••"
-          />
-        </div>
+          <button
+            type="submit"
+            disabled={loading || email.trim().length === 0}
+            className="w-full bg-primary text-white py-2.5 rounded-md font-medium hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handlePasswordSubmit} className="space-y-5" noValidate>
+          <div>
+            <label htmlFor="email-display" className="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <div className="w-full px-4 py-2.5 bg-gray-100 border border-gray-300 rounded-md text-gray-700">
+              {email}
+            </div>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="mt-2 text-sm text-primary hover:text-primary/80 underline"
+            >
+              Change username
+            </button>
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-      </form>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              autoFocus
+            />
+          </div>
 
-      <div className="mt-6 text-center">
-        <p className="text-gray-600 text-sm">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
-            Sign up
-          </Link>
-        </p>
-      </div>
+          <div className="flex items-center">
+            <input
+              id="remember"
+              type="checkbox"
+              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+            />
+            <label htmlFor="remember" className="ml-2 text-sm text-gray-700">
+              Remember me
+            </label>
+          </div>
 
-      <div className="mt-4 text-center">
-        <Link href="/forgot-password" className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
-          Forgot password?
+          <button
+            type="submit"
+            disabled={loading || password.trim().length === 0}
+            className="w-full bg-primary text-white py-2.5 rounded-md font-medium hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Signing in...' : 'Log in'}
+          </button>
+        </form>
+      )}
+
+      <div className="mt-6 text-center space-y-2">
+        <Link href="/forgot-password" className="block text-sm text-primary hover:text-primary/80 underline">
+          Forgotten username?
+        </Link>
+        <Link href="/register" className="block text-sm text-primary hover:text-primary/80 underline">
+          Register for online access
         </Link>
       </div>
     </div>

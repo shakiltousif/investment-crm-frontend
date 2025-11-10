@@ -178,7 +178,7 @@ export default function PortfolioForm({
           name="isActive"
           checked={formData.isActive}
           onChange={handleChange}
-          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
         />
         <label htmlFor="isActive" className="text-sm text-gray-600">
           Mark as active portfolio
@@ -196,7 +196,7 @@ export default function PortfolioForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+          className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition disabled:opacity-50"
         >
           {isSubmitting ? 'Processing...' : (isEditing ? 'Update Portfolio' : 'Create Portfolio')}
         </button>

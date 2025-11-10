@@ -1,9 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '@/lib/api';
 
 interface PerformanceData {
+  portfolioId: string;
+  portfolioName: string;
+  totalValue?: number | string | { toString: () => string };
+  totalInvested?: number | string | { toString: () => string };
+  totalGain?: number | string | { toString: () => string };
+  gainPercentage?: number | string | { toString: () => string };
+  dayChange?: number | string | { toString: () => string };
+  dayChangePercentage?: number | string | { toString: () => string };
+  weekChange?: number | string | { toString: () => string };
+  monthChange?: number | string | { toString: () => string };
+  yearChange?: number | string | { toString: () => string };
+}
+
+interface PortfolioPerformanceChartProps {
+  portfolioId: string;
+}
+
+interface ProcessedPerformanceData {
   portfolioId: string;
   portfolioName: string;
   totalValue: number;
@@ -17,12 +35,8 @@ interface PerformanceData {
   yearChange: number;
 }
 
-interface PortfolioPerformanceChartProps {
-  portfolioId: string;
-}
-
 export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerformanceChartProps) {
-  const [performance, setPerformance] = useState<PerformanceData | null>(null);
+  const [performance, setPerformance] = useState<ProcessedPerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('month');
@@ -31,18 +45,42 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
     fetchPerformance();
   }, [portfolioId]);
 
+  // Helper function to safely convert Decimal or number to number
+  const toNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return parseFloat(value) || 0;
+    if (typeof value === 'object' && 'toString' in value) {
+      return parseFloat(value.toString()) || 0;
+    }
+    return 0;
+  };
+
   const fetchPerformance = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/analytics/portfolio/${portfolioId}/performance`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        },
-      );
-      setPerformance(response.data.data);
+      const response = await api.analytics.getPortfolioPerformance({ portfolioId });
+      const data = response.data.data || response.data;
+      
+      // Convert all Decimal values to numbers
+      if (data) {
+        const processed: ProcessedPerformanceData = {
+          portfolioId: data.portfolioId || '',
+          portfolioName: data.portfolioName || '',
+          totalValue: toNumber(data.totalValue),
+          totalInvested: toNumber(data.totalInvested),
+          totalGain: toNumber(data.totalGain),
+          gainPercentage: toNumber(data.gainPercentage),
+          dayChange: toNumber(data.dayChange),
+          dayChangePercentage: toNumber(data.dayChangePercentage),
+          weekChange: toNumber(data.weekChange),
+          monthChange: toNumber(data.monthChange),
+          yearChange: toNumber(data.yearChange),
+        };
+        setPerformance(processed);
+      } else {
+        setPerformance(null);
+      }
       setError(null);
     } catch (err) {
       setError('Failed to load performance data');
@@ -57,7 +95,7 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
   }
 
   if (error || !performance) {
-    return <div className="bg-white rounded-lg shadow p-6 text-red-600">{error}</div>;
+    return <div className="bg-white rounded-lg shadow p-6 text-secondary">{error}</div>;
   }
 
   const getChangeValue = () => {
@@ -94,20 +132,20 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
   const isPositive = changeValue >= 0;
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-start mb-6">
+    <div className="w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
         <div>
-          <h2 className="text-2xl font-bold">{performance.portfolioName}</h2>
+          <h2 className="text-xl font-bold">{performance.portfolioName}</h2>
           <p className="text-gray-600 text-sm mt-1">Portfolio Performance</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {(['day', 'week', 'month', 'year'] as const).map((tf) => (
             <button
               key={tf}
               onClick={() => setTimeframe(tf)}
               className={`px-3 py-1 rounded text-sm font-medium transition ${
                 timeframe === tf
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -118,12 +156,12 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
       </div>
 
       {/* Main Metrics */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         {/* Total Value */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+        <div className="bg-gradient-to-br from-primary/10 to-primary/20 p-4 rounded-lg">
           <p className="text-gray-600 text-sm mb-1">Total Value</p>
-          <p className="text-2xl font-bold text-blue-600">
-            ${parseFloat(performance.totalValue.toString()).toFixed(2)}
+          <p className="text-2xl font-bold text-primary">
+            £{performance.totalValue.toFixed(2)}
           </p>
         </div>
 
@@ -131,7 +169,7 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg">
           <p className="text-gray-600 text-sm mb-1">Total Invested</p>
           <p className="text-2xl font-bold text-gray-700">
-            ${parseFloat(performance.totalInvested.toString()).toFixed(2)}
+            £{performance.totalInvested.toFixed(2)}
           </p>
         </div>
 
@@ -146,10 +184,10 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
           <p className="text-gray-600 text-sm mb-1">Total Gain/Loss</p>
           <p
             className={`text-2xl font-bold ${
-              performance.totalGain >= 0 ? 'text-green-600' : 'text-red-600'
+              performance.totalGain >= 0 ? 'text-green-600' : 'text-secondary'
             }`}
           >
-            ${parseFloat(performance.totalGain.toString()).toFixed(2)}
+            £{performance.totalGain.toFixed(2)}
           </p>
         </div>
 
@@ -164,28 +202,28 @@ export default function PortfolioPerformanceChart({ portfolioId }: PortfolioPerf
           <p className="text-gray-600 text-sm mb-1">Return %</p>
           <p
             className={`text-2xl font-bold ${
-              performance.gainPercentage >= 0 ? 'text-green-600' : 'text-red-600'
+              performance.gainPercentage >= 0 ? 'text-green-600' : 'text-secondary'
             }`}
           >
-            {Number(performance.gainPercentage).toFixed(2)}%
+            {performance.gainPercentage.toFixed(2)}%
           </p>
         </div>
       </div>
 
       {/* Period Change */}
-      <div className="border-t pt-4">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">
+      <div className="border-t pt-4 mt-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <span className="text-gray-600 text-sm font-medium">
             {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)} Change
           </span>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <p
-              className={`text-lg font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}
+              className={`text-lg font-bold ${isPositive ? 'text-green-600' : 'text-secondary'}`}
             >
-              {isPositive ? '+' : ''}${changeValue.toFixed(2)}
+              {isPositive ? '+' : ''}£{changeValue.toFixed(2)}
             </p>
             <p
-              className={`text-sm ${isPositive ? 'text-green-600' : 'text-red-600'}`}
+              className={`text-sm ${isPositive ? 'text-green-600' : 'text-secondary'}`}
             >
               {isPositive ? '+' : ''}{getChangePercentage().toFixed(2)}%
             </p>

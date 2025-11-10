@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/components/ui/Toast';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import TopProgressBar from '@/components/ui/TopProgressBar';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quintet Private Bank - Investment CRM",
-  description: "A comprehensive client portal for investment management by Quintet Private Bank",
+  title: "FIL LIMITED - Investment Management Portal",
+  description: "A comprehensive client portal for investment management by FIL LIMITED",
 };
 
 export default function RootLayout({
@@ -34,6 +35,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <AuthProvider>
             <ToastProvider>
+              <TopProgressBar />
               {children}
             </ToastProvider>
           </AuthProvider>
