@@ -23,7 +23,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {children}
         </div>
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">© FIL Limited 2025</p>
+          <p className="text-sm text-gray-500">© FIL Limited 2025 All rights reserved.</p>
         </div>
       </div>
     </div>
