@@ -92,8 +92,9 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   const renderCell = (column: Column<T>, row: T) => {
-    const value = column.key.includes('.') 
-      ? column.key.split('.').reduce((obj, key) => obj?.[key], row)
+    const keyString = String(column.key);
+    const value = keyString.includes('.') 
+      ? keyString.split('.').reduce((obj, key) => obj?.[key], row)
       : row[column.key as keyof T];
 
     if (column.render) {

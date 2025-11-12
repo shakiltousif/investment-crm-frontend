@@ -5,9 +5,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import TransactionHistoryTable from '@/components/TransactionHistoryTable';
 
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string;
+  transactionDate: string;
+  completedAt?: string;
+}
+
 export default function TransactionsPage() {
   const { isAuthenticated } = useAuth();
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
@@ -54,7 +65,7 @@ export default function TransactionsPage() {
         }
         
         // Use mock data for demo purposes
-        const mockTransactions = [
+        const mockTransactions: Transaction[] = [
           {
             id: '1',
             type: 'BUY',
@@ -103,7 +114,7 @@ export default function TransactionsPage() {
             status: 'PENDING',
             description: 'Withdrawal to bank account',
             transactionDate: '2023-12-02T16:45:00Z',
-            completedAt: null
+            completedAt: undefined
           },
           {
             id: '6',

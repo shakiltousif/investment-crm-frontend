@@ -87,7 +87,7 @@ export default function BankAccountsPage() {
             currency: 'GBP',
             balance: 15000,
             isVerified: false,
-            verifiedAt: null,
+            verifiedAt: undefined,
             isPrimary: false,
             createdAt: '2023-06-10T00:00:00Z',
             updatedAt: '2023-12-01T00:00:00Z'

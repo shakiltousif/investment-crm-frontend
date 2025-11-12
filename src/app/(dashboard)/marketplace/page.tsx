@@ -88,7 +88,7 @@ export default function MarketplacePage() {
       }
       
       // Use mock data for demo purposes (always fallback for now)
-      const mockInvestments = [
+      const mockInvestments: MarketplaceInvestment[] = [
         {
           id: '1',
           name: 'Apple Inc. (AAPL)',
@@ -99,7 +99,7 @@ export default function MarketplacePage() {
           minimumInvestment: 100,
           maximumInvestment: 100000,
           currency: 'GBP',
-          riskLevel: 'MEDIUM',
+          riskLevel: 'MEDIUM' as const,
           expectedReturn: 8.5,
           isAvailable: true,
           issuer: 'Apple Inc.',
@@ -116,7 +116,7 @@ export default function MarketplacePage() {
           minimumInvestment: 100,
           maximumInvestment: 100000,
           currency: 'GBP',
-          riskLevel: 'HIGH',
+          riskLevel: 'HIGH' as const,
           expectedReturn: 12.0,
           isAvailable: true,
           issuer: 'Tesla Inc.',
@@ -133,7 +133,7 @@ export default function MarketplacePage() {
           minimumInvestment: 1000,
           maximumInvestment: 1000000,
           currency: 'GBP',
-          riskLevel: 'LOW',
+          riskLevel: 'LOW' as const,
           expectedReturn: 4.2,
           maturityDate: '2034-01-01',
           isAvailable: true,

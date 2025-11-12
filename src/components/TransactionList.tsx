@@ -1,8 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Transaction } from '@/types';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string;
+  transactionDate: string;
+  createdAt: string;
+  completedAt?: string;
+}
 
 interface TransactionListProps {
   onExport?: () => void;
@@ -26,8 +37,14 @@ export default function TransactionList({ onExport }: TransactionListProps) {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await api.transactions.getTransactions(filters);
-      setTransactions(response.data);
+      const params: any = {};
+      if (filters.type && filters.type !== 'All Types') params.type = filters.type;
+      if (filters.status && filters.status !== 'All Statuses') params.status = filters.status;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      
+      const response = await api.transactions.getAll(params);
+      setTransactions(response.data.data || response.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch transactions');
     } finally {
@@ -41,7 +58,25 @@ export default function TransactionList({ onExport }: TransactionListProps) {
 
   const handleExport = async () => {
     try {
-      await api.transactions.exportTransactions();
+      // Create CSV content
+      const csvContent = [
+        ['Date', 'Type', 'Amount', 'Status', 'Description'],
+        ...transactions.map((t) => [
+          new Date(t.createdAt).toLocaleDateString(),
+          t.type,
+          t.amount.toString(),
+          t.status,
+          t.description || '',
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'transactions.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
       onExport?.();
     } catch (err: any) {
       setError(err.message || 'Failed to export transactions');

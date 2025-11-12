@@ -32,7 +32,7 @@ interface TransactionHistoryTableProps {
 export default function TransactionHistoryTable({
   transactions = [],
   loading = false,
-  error = null,
+  error = undefined,
   portfolioId,
   onRefresh,
 }: TransactionHistoryTableProps) {
