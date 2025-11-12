@@ -85,6 +85,7 @@ export default function AdminLayout({
                   width={40}
                   height={40}
                   className="object-contain rounded mr-2"
+                  unoptimized
                 />
                 <span className="text-xl font-bold text-gray-900">Admin Panel</span>
               </Link>
@@ -188,6 +189,7 @@ export default function AdminLayout({
               width={50}
               height={50}
               className="object-contain"
+              unoptimized
             />
           </div>
           <nav className="space-y-1">

@@ -15,6 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 height={80}
                 className="object-contain rounded"
                 priority
+                unoptimized
               />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Log in</h1>

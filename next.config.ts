@@ -2,16 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // Disable image optimization if it's causing issues
-    // Set to true if you want to disable optimization completely
+    // Completely disable image optimization - serve images directly from public folder
+    // This bypasses the /_next/image endpoint entirely
     unoptimized: true,
-    // If you need to allow external domains in the future
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'signin-fil-investments.com',
-      },
-    ],
   },
 };
 

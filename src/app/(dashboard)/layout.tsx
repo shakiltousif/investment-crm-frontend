@@ -142,6 +142,7 @@ export default function DashboardLayout({
             height={40}
             className="object-contain rounded"
             priority
+            unoptimized
           />
         </div>
       </header>
@@ -157,6 +158,7 @@ export default function DashboardLayout({
               height={60}
               className="object-contain rounded"
               priority
+              unoptimized
             />
           </div>
         </div>
@@ -241,6 +243,7 @@ export default function DashboardLayout({
               width={50}
               height={50}
               className="object-contain"
+              unoptimized
             />
           </div>
           <nav className="space-y-1">
