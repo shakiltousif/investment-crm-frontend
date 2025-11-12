@@ -46,6 +46,34 @@ jobs:
         run: RUNNER_ALLOW_RUNASROOT=1 yarn build
         env:
           NODE_ENV: production
+
+      - name: Verify public folder and static assets
+        run: |
+          echo "Checking public folder..."
+          if [ -d "public" ]; then
+            echo "✅ Public folder exists"
+            ls -la public/
+            if [ -f "public/logo.jpeg" ]; then
+              echo "✅ logo.jpeg exists"
+            else
+              echo "❌ logo.jpeg NOT FOUND"
+            fi
+            if [ -f "public/favicon.ico" ]; then
+              echo "✅ favicon.ico exists"
+            else
+              echo "❌ favicon.ico NOT FOUND"
+            fi
+          else
+            echo "❌ Public folder does NOT exist"
+          fi
+          echo ""
+          echo "Checking .next folder structure..."
+          if [ -d ".next" ]; then
+            echo "✅ .next folder exists"
+            ls -la .next/ | head -20
+          else
+            echo "❌ .next folder does NOT exist"
+          fi
       
       - name: Restart PM2 process
         run: |
