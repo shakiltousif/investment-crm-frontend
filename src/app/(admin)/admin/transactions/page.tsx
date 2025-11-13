@@ -49,10 +49,12 @@ export default function AdminTransactionsPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchTransactions();
-  }, [filters]);
+  }, [filters, currentPage, itemsPerPage]);
 
   const fetchTransactions = async () => {
     try {
@@ -64,7 +66,8 @@ export default function AdminTransactionsPage() {
       if (filters.userId) params.userId = filters.userId;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
-      params.limit = 100;
+      params.limit = itemsPerPage;
+      params.offset = (currentPage - 1) * itemsPerPage;
 
       const response = await api.admin.getAllTransactions(params);
       setTransactions(response.data.data.transactions);
@@ -79,6 +82,7 @@ export default function AdminTransactionsPage() {
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
   };
 
   const handleViewDetails = (transaction: Transaction) => {
@@ -206,6 +210,22 @@ export default function AdminTransactionsPage() {
                 className="w-full"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Items Per Page</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -289,6 +309,37 @@ export default function AdminTransactionsPage() {
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">No transactions found</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {transactions.length > 0 && (
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                {Math.min(currentPage * itemsPerPage, total)} of {total} transactions
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1 || loading}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {Math.ceil(total / itemsPerPage) || 1}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(Math.ceil(total / itemsPerPage) || 1, prev + 1))
+                  }
+                  disabled={currentPage >= Math.ceil(total / itemsPerPage) || loading}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </CardContent>

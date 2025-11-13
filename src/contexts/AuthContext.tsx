@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { api } from '@/lib/api';
+import { extractErrorMessage } from '@/lib/errorHandling';
 
 interface User {
   id: string;
@@ -136,17 +137,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // Provide more specific error messages
-      if (error.response) {
-        const errorMessage = error.response.data?.message || 
-                           error.response.data?.error || 
-                           'Login failed. Please check your credentials.';
+      // Extract error message safely using utility function
+      const errorMessage = extractErrorMessage(error, 'Login failed. Please check your credentials.');
         throw new Error(errorMessage);
-      } else if (error.request) {
-        throw new Error('Unable to connect to server. Please check your connection.');
-      } else {
-        throw new Error(error.message || 'Login failed');
-      }
     }
     // Don't set isLoading(false) here - let the component handle it
   };
@@ -219,8 +212,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateUser = async (data: Partial<User>) => {
     try {
-      const response = await api.users.updateProfile(data);
-      setUser(response.data.data);
+      // If data contains all user fields (like from profile picture upload), update directly
+      // Otherwise, make API call to update profile
+      if (data.id && data.email && data.firstName && data.lastName && data.role) {
+        // This is a full user object, update directly without API call
+        // Preserve existing user data for any missing fields
+        setUser({
+          id: data.id,
+          email: data.email,
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          phoneNumber: data.phoneNumber ?? user?.phoneNumber,
+          profilePicture: data.profilePicture ?? user?.profilePicture,
+          dateOfBirth: data.dateOfBirth ?? user?.dateOfBirth,
+          address: data.address ?? user?.address,
+          city: data.city ?? user?.city,
+          state: data.state ?? user?.state,
+          zipCode: data.zipCode ?? user?.zipCode,
+          country: data.country ?? user?.country,
+          role: data.role || user?.role || 'CLIENT',
+          kycStatus: data.kycStatus || user?.kycStatus || 'PENDING',
+          kycVerifiedAt: data.kycVerifiedAt ?? user?.kycVerifiedAt,
+          isEmailVerified: data.isEmailVerified ?? user?.isEmailVerified ?? false,
+          emailVerifiedAt: data.emailVerifiedAt ?? user?.emailVerifiedAt,
+          isActive: data.isActive ?? user?.isActive ?? true,
+          lastLoginAt: data.lastLoginAt ?? user?.lastLoginAt,
+          createdAt: data.createdAt || user?.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || new Date().toISOString(),
+        });
+      } else {
+        // This is partial data, make API call
+        const response = await api.users.updateProfile(data);
+        const userData = response.data.data;
+        // Ensure all required fields are present
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          phoneNumber: userData.phoneNumber,
+          profilePicture: userData.profilePicture,
+          dateOfBirth: userData.dateOfBirth,
+          address: userData.address,
+          city: userData.city,
+          state: userData.state,
+          zipCode: userData.zipCode,
+          country: userData.country,
+          role: userData.role || user?.role || 'CLIENT',
+          kycStatus: userData.kycStatus || 'PENDING',
+          kycVerifiedAt: userData.kycVerifiedAt,
+          isEmailVerified: userData.isEmailVerified || false,
+          emailVerifiedAt: userData.emailVerifiedAt,
+          isActive: userData.isActive !== undefined ? userData.isActive : true,
+          lastLoginAt: userData.lastLoginAt,
+          createdAt: userData.createdAt || user?.createdAt || new Date().toISOString(),
+          updatedAt: userData.updatedAt || new Date().toISOString(),
+        });
+      }
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update profile');
     }

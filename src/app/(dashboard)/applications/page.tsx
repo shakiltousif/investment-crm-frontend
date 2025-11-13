@@ -34,6 +34,8 @@ export default function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'ALLOCATED' | 'REJECTED'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchApplications();
@@ -51,7 +53,7 @@ export default function ApplicationsPage() {
       setApplications(response.data.data || []);
     } catch (err: any) {
       console.error('Failed to fetch applications:', err);
-      setError(err.response?.data?.message || 'Failed to load applications');
+      setError(err.response?.data?.message || 'Failed to load enrollments');
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,7 @@ export default function ApplicationsPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading applications...</p>
+          <p className="text-gray-600">Loading enrollments...</p>
         </div>
       </div>
     );
@@ -104,8 +106,8 @@ export default function ApplicationsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Investment Applications</h1>
-          <p className="text-gray-600 mt-2">Track your IPO and investment applications</p>
+          <h1 className="text-3xl font-bold text-gray-900">Investment Enrollments</h1>
+          <p className="text-gray-600 mt-2">Track your investment account enrollments</p>
         </div>
       </div>
 
@@ -132,22 +134,50 @@ export default function ApplicationsPage() {
         ))}
       </div>
 
+      {/* Items Per Page */}
+      {applications.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Items Per Page:</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <div className="text-sm text-gray-600">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, applications.length)} of {applications.length} enrollments
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Applications List */}
       {applications.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Applications Found</h3>
-            <p className="text-gray-600">
-              {filter === 'all'
-                ? "You haven't submitted any investment applications yet."
-                : `No ${filter.toLowerCase()} applications found.`}
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Enrollments Found</h3>
+              <p className="text-gray-600">
+                {filter === 'all'
+                ? "You haven't submitted any investment enrollments yet."
+                : `No ${filter.toLowerCase()} enrollments found.`}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {applications.map((application) => (
+        <>
+          <div className="space-y-4">
+            {applications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((application) => (
             <Card key={application.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -233,7 +263,7 @@ export default function ApplicationsPage() {
                 {application.marketplaceItem.applicationDeadline && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-sm text-gray-600">
-                      Application Deadline:{' '}
+                      Enrollment Deadline:{' '}
                       <span className="font-medium">
                         {new Date(application.marketplaceItem.applicationDeadline).toLocaleDateString()}
                       </span>
@@ -244,6 +274,32 @@ export default function ApplicationsPage() {
             </Card>
           ))}
         </div>
+
+        {/* Pagination */}
+        {applications.length > itemsPerPage && (
+          <div className="flex justify-between items-center mt-6">
+            <div className="text-sm text-gray-600">
+              Page {currentPage} of {Math.ceil(applications.length / itemsPerPage)}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(applications.length / itemsPerPage), prev + 1))}
+                disabled={currentPage >= Math.ceil(applications.length / itemsPerPage)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

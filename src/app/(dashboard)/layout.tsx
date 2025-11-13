@@ -1,9 +1,25 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { NotificationProvider } from '@/contexts/NotificationContext';
+import NotificationBell from '@/components/NotificationBell';
+import ReportProblemButton from '@/components/ReportProblemButton';
+import {
+  LayoutDashboard,
+  Briefcase,
+  TrendingUp,
+  ArrowLeftRight,
+  CreditCard,
+  User,
+  FileText,
+  BarChart3,
+  FolderOpen,
+  HelpCircle,
+  LogOut,
+} from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -11,6 +27,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,12 +77,12 @@ export default function DashboardLayout({
         element.requestFullscreen().catch((err) => {
           console.error('Error attempting to enable fullscreen:', err);
         });
-      } else if ((element as any).webkitRequestFullscreen) {
-        (element as any).webkitRequestFullscreen();
-      } else if ((element as any).mozRequestFullScreen) {
-        (element as any).mozRequestFullScreen();
-      } else if ((element as any).msRequestFullscreen) {
-        (element as any).msRequestFullscreen();
+      } else if ('webkitRequestFullscreen' in element && typeof (element as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen === 'function') {
+        (element as { webkitRequestFullscreen: () => void }).webkitRequestFullscreen();
+      } else if ('mozRequestFullScreen' in element && typeof (element as { mozRequestFullScreen?: () => void }).mozRequestFullScreen === 'function') {
+        (element as { mozRequestFullScreen: () => void }).mozRequestFullScreen();
+      } else if ('msRequestFullscreen' in element && typeof (element as { msRequestFullscreen?: () => void }).msRequestFullscreen === 'function') {
+        (element as { msRequestFullscreen: () => void }).msRequestFullscreen();
       }
     } else {
       // Exit fullscreen
@@ -73,12 +90,12 @@ export default function DashboardLayout({
         document.exitFullscreen().catch((err) => {
           console.error('Error attempting to exit fullscreen:', err);
         });
-      } else if ((document as any).webkitExitFullscreen) {
-        (document as any).webkitExitFullscreen();
-      } else if ((document as any).mozCancelFullScreen) {
-        (document as any).mozCancelFullScreen();
-      } else if ((document as any).msExitFullscreen) {
-        (document as any).msExitFullscreen();
+      } else if ('webkitExitFullscreen' in document && typeof (document as { webkitExitFullscreen?: () => void }).webkitExitFullscreen === 'function') {
+        (document as { webkitExitFullscreen: () => void }).webkitExitFullscreen();
+      } else if ('mozCancelFullScreen' in document && typeof (document as { mozCancelFullScreen?: () => void }).mozCancelFullScreen === 'function') {
+        (document as { mozCancelFullScreen: () => void }).mozCancelFullScreen();
+      } else if ('msExitFullscreen' in document && typeof (document as { msExitFullscreen?: () => void }).msExitFullscreen === 'function') {
+        (document as { msExitFullscreen: () => void }).msExitFullscreen();
       }
     }
   };
@@ -99,7 +116,8 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <NotificationProvider>
+      <div className="min-h-screen bg-gray-50">
       {/* Top Header Bar */}
       {/* Note: This is the client dashboard - no "switch to admin" option should be shown here.
           Admins can access the admin panel directly via /admin route, but this client dashboard
@@ -117,6 +135,7 @@ export default function DashboardLayout({
           </h1>
         </div>
         <div className="flex items-center gap-4">
+          <NotificationBell />
           <button 
             onClick={handleFullscreen}
             className={`text-gray-600 hover:text-gray-900 transition-colors ${isFullscreen ? 'text-primary' : ''}`}
@@ -163,79 +182,159 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        <nav className="space-y-1">
-          <Link
-            href="/dashboard"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors relative group"
-          >
-            <span className="flex items-center gap-3">
-              <span className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              Dashboard
-            </span>
-          </Link>
-          <Link
-            href="/portfolio"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Portfolio
-          </Link>
-          <Link
-            href="/investments"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Investments
-          </Link>
-          <Link
-            href="/transactions"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Transactions
-          </Link>
-          <Link
-            href="/bank-accounts"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Bank Accounts
-          </Link>
-          <Link
-            href="/profile"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Profile
-          </Link>
-          <Link
-            href="/applications"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Applications
-          </Link>
-          <Link
-            href="/reports"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Reports
-          </Link>
-          <Link
-            href="/documents"
-            className="block px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Documents
-          </Link>
+        <nav className="space-y-2">
+          {/* Main Navigation */}
+          <div className="space-y-1">
+            <Link
+              href="/dashboard"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/dashboard'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <LayoutDashboard className={`h-5 w-5 ${pathname === '/dashboard' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Dashboard</span>
+            </Link>
+            
+            <Link
+              href="/portfolio"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/portfolio'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <Briefcase className={`h-5 w-5 ${pathname === '/portfolio' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Portfolio</span>
+            </Link>
+            
+            <Link
+              href="/investments"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/investments'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <TrendingUp className={`h-5 w-5 ${pathname === '/investments' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Investments</span>
+            </Link>
+            
+            <Link
+              href="/transactions"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/transactions'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <ArrowLeftRight className={`h-5 w-5 ${pathname === '/transactions' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Transactions</span>
+            </Link>
+            
+            <Link
+              href="/bank-accounts"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/bank-accounts'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <CreditCard className={`h-5 w-5 ${pathname === '/bank-accounts' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Bank Accounts</span>
+            </Link>
+          </div>
+
+          {/* Divider */}
+          <div className="my-4 border-t border-white/10"></div>
+
+          {/* Secondary Navigation */}
+          <div className="space-y-1">
+            <Link
+              href="/support"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/support'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <HelpCircle className={`h-5 w-5 ${pathname === '/support' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Support</span>
+            </Link>
+            
+            <Link
+              href="/profile"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/profile'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <User className={`h-5 w-5 ${pathname === '/profile' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Profile</span>
+            </Link>
+            
+            <Link
+              href="/applications"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/applications'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <FileText className={`h-5 w-5 ${pathname === '/applications' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Allocations</span>
+            </Link>
+            
+            <Link
+              href="/reports"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/reports'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <BarChart3 className={`h-5 w-5 ${pathname === '/reports' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Reports</span>
+            </Link>
+            
+            <Link
+              href="/documents"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/documents'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <FolderOpen className={`h-5 w-5 ${pathname === '/documents' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Documents</span>
+            </Link>
+          </div>
         </nav>
 
-        <div className="mt-8 pt-8 border-t border-white/20">
+        <div className="mt-8 pt-8 border-t border-white/10">
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2.5 bg-secondary rounded-lg hover:bg-secondary/90 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-3 bg-secondary/90 hover:bg-secondary rounded-xl transition-all duration-200 text-white font-medium group"
           >
-            Logout
+            <LogOut className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <span>Logout</span>
           </button>
         </div>
       </aside>
 
+      {/* Mobile menu overlay */}
+      {menuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 top-16"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden fixed top-16 left-0 right-0 bg-primary text-white p-4 z-40 shadow-lg">
+        <div className="md:hidden fixed top-16 left-0 right-0 bg-primary text-white p-4 z-40 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="mb-4 flex justify-center">
             <Image
               src="/logo.jpeg"
@@ -246,39 +345,148 @@ export default function DashboardLayout({
               unoptimized
             />
           </div>
-          <nav className="space-y-1">
-            <Link href="/dashboard" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Dashboard
+          <nav className="space-y-2">
+            <Link 
+              href="/dashboard" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/dashboard'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Dashboard</span>
             </Link>
-            <Link href="/portfolio" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Portfolio
+            <Link 
+              href="/portfolio" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/portfolio'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <Briefcase className="h-5 w-5" />
+              <span>Portfolio</span>
             </Link>
-            <Link href="/investments" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Investments
+            <Link 
+              href="/investments" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/investments'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <TrendingUp className="h-5 w-5" />
+              <span>Investments</span>
             </Link>
-            <Link href="/transactions" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Transactions
+            <Link 
+              href="/transactions" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/transactions'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <ArrowLeftRight className="h-5 w-5" />
+              <span>Transactions</span>
             </Link>
-            <Link href="/bank-accounts" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Bank Accounts
+            <Link 
+              href="/bank-accounts" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/bank-accounts'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <CreditCard className="h-5 w-5" />
+              <span>Bank Accounts</span>
             </Link>
-            <Link href="/profile" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Profile
+            <Link 
+              href="/support" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/support'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <HelpCircle className="h-5 w-5" />
+              <span>Support</span>
             </Link>
-            <Link href="/applications" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Applications
+            <Link 
+              href="/profile" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/profile'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <User className="h-5 w-5" />
+              <span>Profile</span>
             </Link>
-            <Link href="/reports" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Reports
+            <Link 
+              href="/applications" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/applications'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <FileText className="h-5 w-5" />
+              <span>Allocations</span>
             </Link>
-            <Link href="/support" className="block px-4 py-2.5 rounded-lg hover:bg-primary/80">
-              Support
+            <Link 
+              href="/reports" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/reports'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span>Reports</span>
+            </Link>
+            <Link 
+              href="/documents" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/documents'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <FolderOpen className="h-5 w-5" />
+              <span>Documents</span>
+            </Link>
+            <Link 
+              href="/support" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/support'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <HelpCircle className="h-5 w-5" />
+              <span>Support</span>
             </Link>
             <button
-              onClick={handleLogout}
-              className="w-full px-4 py-2.5 bg-secondary rounded-lg hover:bg-secondary/90 text-left mt-4"
+              onClick={() => {
+                setMenuOpen(false);
+                handleLogout();
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-secondary/90 hover:bg-secondary rounded-xl transition-all duration-200 text-white font-medium mt-4"
             >
-              Logout
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
             </button>
           </nav>
         </div>
@@ -290,7 +498,11 @@ export default function DashboardLayout({
           {children}
         </div>
       </main>
-    </div>
+
+      {/* Floating Report Problem Button */}
+      <ReportProblemButton />
+      </div>
+    </NotificationProvider>
   );
 }
 

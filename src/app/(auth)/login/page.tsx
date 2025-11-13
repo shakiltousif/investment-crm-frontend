@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { extractErrorMessage } from '@/lib/errorHandling';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -65,13 +66,8 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      // Extract error message from various possible locations
-      const errorMessage = 
-        err?.message || 
-        err?.response?.data?.message || 
-        err?.response?.data?.error ||
-        err?.response?.data?.data?.message ||
-        'Login failed. Please check your credentials.';
+      // Extract error message safely using utility function
+      const errorMessage = extractErrorMessage(err, 'Login failed. Please check your credentials.');
       setError(errorMessage);
       // Clear password on error for security, but keep email and stay on password step
       setPassword('');

@@ -15,18 +15,32 @@ export enum ErrorType {
 export interface AppError {
   type: ErrorType;
   message: string;
-  details?: any;
+  details?: unknown;
   code?: string | number;
   timestamp: Date;
 }
 
 // Error classification
-export function classifyError(error: any): AppError {
+export function classifyError(error: unknown): AppError {
   const timestamp = new Date();
   
   if (error instanceof AxiosError) {
     const status = error.response?.status;
-    const message = error.response?.data?.message || error.message;
+    // Extract message from various possible locations in the response
+    const responseData = error.response?.data;
+    let message = error.message;
+    if (responseData) {
+      // Backend returns { error: { message: "...", statusCode: 401 } }
+      if (responseData.error?.message && typeof responseData.error.message === 'string') {
+        message = responseData.error.message;
+      } else if (responseData.message && typeof responseData.message === 'string') {
+        message = responseData.message;
+      } else if (typeof responseData.error === 'string') {
+        message = responseData.error;
+      } else if (typeof responseData === 'string') {
+        message = responseData;
+      }
+    }
     
     switch (status) {
       case 400:
@@ -118,7 +132,7 @@ export function getUserFriendlyMessage(error: AppError): string {
 export function useErrorHandler() {
   const { error: showError } = useToastHelpers();
   
-  const handleError = (error: any, customMessage?: string) => {
+  const handleError = (error: unknown, customMessage?: string) => {
     const appError = classifyError(error);
     const message = customMessage || getUserFriendlyMessage(appError);
     
@@ -188,7 +202,7 @@ export function setupGlobalErrorHandling() {
 }
 
 // Error boundary error handler
-export function handleErrorBoundaryError(error: Error, errorInfo: any) {
+export function handleErrorBoundaryError(error: Error, errorInfo: { componentStack?: string }) {
   const appError = classifyError(error);
   
   console.error('Error boundary caught error:', {
@@ -207,7 +221,7 @@ export function handleErrorBoundaryError(error: Error, errorInfo: any) {
 }
 
 // API error interceptor
-export function setupAPIErrorHandling(axiosInstance: any) {
+export function setupAPIErrorHandling(axiosInstance: { interceptors: { response: { use: (onFulfilled?: unknown, onRejected?: (error: unknown) => unknown) => void } } } }) {
   axiosInstance.interceptors.response.use(
     (response: AxiosResponse) => response,
     (error: AxiosError) => {
@@ -230,6 +244,92 @@ export function setupAPIErrorHandling(axiosInstance: any) {
       return Promise.reject(appError);
     }
   );
+}
+
+// Type for Axios error response
+export interface AxiosErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+      error?: string | { message?: string };
+    };
+  };
+  message?: string;
+}
+
+// Safely extract error message from any error type
+export function extractErrorMessage(error: unknown, fallback: string = 'An error occurred'): string {
+  if (!error) {
+    return fallback;
+  }
+  
+  // If it's already a string, return it
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  // PRIORITY 1: Check Axios response data first (most reliable source)
+  // This should be checked before error.message to avoid Axios default messages
+  const axiosError = error as AxiosErrorResponse;
+  if (axiosError?.response?.data) {
+    const responseData = axiosError.response.data;
+    
+    // Backend returns { error: { message: "...", statusCode: 401 } }
+    if (responseData?.error) {
+      if (typeof responseData.error === 'string') {
+        return responseData.error;
+      }
+      if (responseData.error?.message && typeof responseData.error.message === 'string') {
+        return responseData.error.message;
+      }
+    }
+    
+    // Check for direct message property in response data
+    if (responseData?.message && typeof responseData.message === 'string') {
+      return responseData.message;
+    }
+    
+    // Check nested data.message
+    if (responseData?.data?.message && typeof responseData.data.message === 'string') {
+      return responseData.data.message;
+    }
+    
+    // If response data is a string, use it
+    if (typeof responseData === 'string') {
+      return responseData;
+    }
+  }
+  
+  // PRIORITY 2: Check error.message (but only if it's not a generic Axios message)
+  if (axiosError?.message && typeof axiosError.message === 'string') {
+    // Skip generic Axios error messages
+    const genericMessages = [
+      'Request failed with status code',
+      'Network Error',
+      'timeout of',
+      'ECONNREFUSED',
+    ];
+    
+    const isGenericMessage = genericMessages.some((msg) => 
+      axiosError.message?.includes(msg)
+    );
+    
+    if (!isGenericMessage && axiosError.message) {
+      return axiosError.message;
+    }
+  }
+  
+  // PRIORITY 3: Network error (no response)
+  if (axiosError?.request && !axiosError?.response) {
+    return 'Unable to connect to server. Please check your connection.';
+  }
+  
+  // PRIORITY 4: Last resort - try to convert to string, but use fallback if it's an object
+  if (typeof error === 'object') {
+    return fallback;
+  }
+  
+  return String(error) || fallback;
 }
 
 // Form validation error handler

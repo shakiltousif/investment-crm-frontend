@@ -47,6 +47,8 @@ export default function DepositsPage() {
     startDate: '',
     endDate: '',
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -262,21 +264,47 @@ export default function DepositsPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-6 font-medium text-gray-700">Amount</th>
-                  <th className="text-left py-3 px-6 font-medium text-gray-700">Bank Account</th>
-                  <th className="text-left py-3 px-6 font-medium text-gray-700">Status</th>
-                  <th className="text-left py-3 px-6 font-medium text-gray-700">Date</th>
-                  <th className="text-left py-3 px-6 font-medium text-gray-700">Description</th>
-                  <th className="text-left py-3 px-6 font-medium text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {deposits.map((deposit) => (
+        <>
+          {/* Items Per Page */}
+          <div className="bg-white rounded-lg shadow p-4 mb-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Items Per Page:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div className="text-sm text-gray-600">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, deposits.length)} of {deposits.length} deposits
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left py-3 px-6 font-medium text-gray-700">Amount</th>
+                    <th className="text-left py-3 px-6 font-medium text-gray-700">Bank Account</th>
+                    <th className="text-left py-3 px-6 font-medium text-gray-700">Status</th>
+                    <th className="text-left py-3 px-6 font-medium text-gray-700">Date</th>
+                    <th className="text-left py-3 px-6 font-medium text-gray-700">Description</th>
+                    <th className="text-left py-3 px-6 font-medium text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {deposits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((deposit) => (
                   <tr key={deposit.id} className="hover:bg-gray-50">
                     <td className="py-4 px-6">
                       <div className="font-medium text-gray-900">
@@ -335,6 +363,32 @@ export default function DepositsPage() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {deposits.length > itemsPerPage && (
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-600">
+              Page {currentPage} of {Math.ceil(deposits.length / itemsPerPage)}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(deposits.length / itemsPerPage), prev + 1))}
+                disabled={currentPage >= Math.ceil(deposits.length / itemsPerPage)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       {/* Details Modal */}

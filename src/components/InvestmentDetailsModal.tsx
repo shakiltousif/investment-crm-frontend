@@ -58,14 +58,8 @@ export default function InvestmentDetailsModal({
         return 'text-purple-600 bg-purple-100';
       case 'TERM_DEPOSIT':
         return 'text-green-600 bg-green-100';
-      case 'PRIVATE_EQUITY':
-        return 'text-orange-600 bg-orange-100';
       case 'MUTUAL_FUND':
         return 'text-primary bg-primary/10';
-      case 'ETF':
-        return 'text-cyan-600 bg-cyan-100';
-      case 'CRYPTOCURRENCY':
-        return 'text-yellow-600 bg-yellow-100';
       default:
         return 'text-gray-600 bg-gray-100';
     }
@@ -119,24 +113,6 @@ export default function InvestmentDetailsModal({
               <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">Financial Information</h4>
               
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Current Price:</span>
-                  <div className="text-right">
-                    <span className="font-semibold text-lg">
-                      £{Number(investment.currentPrice).toLocaleString()}
-                    </span>
-                    {investment.symbol && liveQuotes.has(investment.symbol) && (
-                      <div className="text-sm">
-                        <span className={`${liveQuotes.get(investment.symbol).change >= 0 ? 'text-green-600' : 'text-secondary'}`}>
-                          {liveQuotes.get(investment.symbol).change >= 0 ? '+' : ''}
-                          {liveQuotes.get(investment.symbol).change.toFixed(2)} 
-                          ({liveQuotes.get(investment.symbol).changePercent.toFixed(2)}%)
-                        </span>
-                        <span className="text-gray-500 ml-1">Live</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Minimum Investment:</span>
@@ -145,14 +121,14 @@ export default function InvestmentDetailsModal({
                   </span>
                 </div>
                 
-                {investment.maximumInvestment && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Maximum Investment:</span>
-                    <span className="font-medium">
-                      £{Number(investment.maximumInvestment).toLocaleString()}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Maximum Investment:</span>
+                  <span className="font-medium">
+                    {investment.maximumInvestment 
+                      ? `£${Number(investment.maximumInvestment).toLocaleString()}`
+                      : 'Unlimited'}
+                  </span>
+                </div>
                 
                 {investment.expectedReturn && (
                   <div className="flex justify-between">

@@ -41,17 +41,24 @@ export default function AdminDepositsPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchDeposits();
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   const fetchDeposits = async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await api.admin.getPendingDeposits({ limit: 100 });
+      const response = await api.admin.getPendingDeposits({
+        limit: itemsPerPage,
+        offset: (currentPage - 1) * itemsPerPage,
+      });
       setDeposits(response.data.data.deposits);
+      setTotal(response.data.data.total || response.data.data.deposits.length);
     } catch (err: any) {
       console.error('Failed to fetch deposits:', err);
       setError(err.response?.data?.message || 'Failed to load deposits');
@@ -178,10 +185,26 @@ export default function AdminDepositsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Deposit Requests ({deposits.length})</CardTitle>
+          <CardTitle>Deposit Requests ({total})</CardTitle>
           <CardDescription>All pending deposit requests awaiting approval</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700">Items Per Page</label>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+            >
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
           {deposits.length > 0 ? (
             <div className="space-y-4">
               {deposits.map((deposit) => (
@@ -264,6 +287,37 @@ export default function AdminDepositsPage() {
             <div className="text-center py-12">
               <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">No pending deposits</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {deposits.length > 0 && (
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                {Math.min(currentPage * itemsPerPage, total)} of {total} deposits
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1 || loading}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {Math.ceil(total / itemsPerPage) || 1}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(Math.ceil(total / itemsPerPage) || 1, prev + 1))
+                  }
+                  disabled={currentPage >= Math.ceil(total / itemsPerPage) || loading}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </CardContent>

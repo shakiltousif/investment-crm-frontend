@@ -31,6 +31,13 @@ interface InvestmentListProps {
   onRefresh?: () => void;
   loading?: boolean;
   className?: string;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+  };
 }
 
 export default function InvestmentList({
@@ -40,6 +47,7 @@ export default function InvestmentList({
   onRefresh,
   loading = false,
   className,
+  pagination,
 }: InvestmentListProps) {
 
   const handleDelete = async (investmentId: string) => {
@@ -111,6 +119,7 @@ export default function InvestmentList({
         onSell={onSell}
         onDelete={(investment) => handleDelete(investment.id)}
         loading={loading}
+        pagination={pagination}
       />
     </div>
   );

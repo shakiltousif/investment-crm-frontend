@@ -63,7 +63,7 @@ describe('BankAccountForm', () => {
     expect(screen.getByLabelText(/account holder name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/account number/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/bank name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/bank code/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/sort code/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/account type/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/currency/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/balance/i)).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe('BankAccountForm', () => {
       expect(screen.getByText(/account holder name is required/i)).toBeInTheDocument();
       expect(screen.getByText(/account number is required/i)).toBeInTheDocument();
       expect(screen.getByText(/bank name is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/bank code is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/sort code is required/i)).toBeInTheDocument();
     });
   });
 
@@ -167,7 +167,7 @@ describe('BankAccountForm', () => {
     fireEvent.change(screen.getByLabelText(/account holder name/i), { target: { value: 'Jane Doe' } });
     fireEvent.change(screen.getByLabelText(/account number/i), { target: { value: '9876543210' } });
     fireEvent.change(screen.getByLabelText(/bank name/i), { target: { value: 'New Bank' } });
-    fireEvent.change(screen.getByLabelText(/bank code/i), { target: { value: 'NB' } });
+    fireEvent.change(screen.getByLabelText(/sort code/i), { target: { value: 'NB' } });
     fireEvent.change(screen.getByLabelText(/account type/i), { target: { value: 'CHECKING' } });
     fireEvent.change(screen.getByLabelText(/currency/i), { target: { value: 'USD' } });
     fireEvent.change(screen.getByLabelText(/balance/i), { target: { value: '1000' } });
@@ -235,7 +235,7 @@ describe('BankAccountForm', () => {
     fireEvent.change(screen.getByLabelText(/account holder name/i), { target: { value: 'Jane Doe' } });
     fireEvent.change(screen.getByLabelText(/account number/i), { target: { value: '9876543210' } });
     fireEvent.change(screen.getByLabelText(/bank name/i), { target: { value: 'New Bank' } });
-    fireEvent.change(screen.getByLabelText(/bank code/i), { target: { value: 'NB' } });
+    fireEvent.change(screen.getByLabelText(/sort code/i), { target: { value: 'NB' } });
     fireEvent.change(screen.getByLabelText(/account type/i), { target: { value: 'CHECKING' } });
     fireEvent.change(screen.getByLabelText(/currency/i), { target: { value: 'USD' } });
     fireEvent.change(screen.getByLabelText(/balance/i), { target: { value: '1000' } });
@@ -275,7 +275,7 @@ describe('BankAccountForm', () => {
     fireEvent.change(screen.getByLabelText(/account holder name/i), { target: { value: 'Jane Doe' } });
     fireEvent.change(screen.getByLabelText(/account number/i), { target: { value: '9876543210' } });
     fireEvent.change(screen.getByLabelText(/bank name/i), { target: { value: 'New Bank' } });
-    fireEvent.change(screen.getByLabelText(/bank code/i), { target: { value: 'NB' } });
+    fireEvent.change(screen.getByLabelText(/sort code/i), { target: { value: 'NB' } });
     fireEvent.change(screen.getByLabelText(/account type/i), { target: { value: 'CHECKING' } });
     fireEvent.change(screen.getByLabelText(/currency/i), { target: { value: 'USD' } });
     fireEvent.change(screen.getByLabelText(/balance/i), { target: { value: '1000' } });
@@ -351,17 +351,17 @@ describe('BankAccountForm', () => {
     });
   });
 
-  it('validates bank code format', async () => {
+  it('validates sort code format', async () => {
     renderWithProviders(<BankAccountForm {...defaultProps} />);
     
-    const bankCodeInput = screen.getByLabelText(/bank code/i);
-    fireEvent.change(bankCodeInput, { target: { value: '123' } });
+    const sortCodeInput = screen.getByLabelText(/sort code/i);
+    fireEvent.change(sortCodeInput, { target: { value: '123' } });
     
     const submitButton = screen.getByRole('button', { name: /create account/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/bank code must be 2-4 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/sort code must be 2-4 characters/i)).toBeInTheDocument();
     });
   });
 

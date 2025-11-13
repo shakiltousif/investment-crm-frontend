@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Edit, UserCheck, UserX, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, UserCheck, UserX, Trash2, Lock, Unlock } from 'lucide-react';
 import { useConfirmDialog } from '@/components/composite/ConfirmDialog';
 
 interface User {
@@ -21,6 +21,19 @@ interface User {
   kycStatus: string;
   createdAt: string;
   lastLoginAt?: string;
+  lockedUntil?: string | null;
+  failedLoginAttempts?: number;
+  dateOfBirth?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+  country?: string | null;
+  profilePicture?: string | null;
+  documentType?: string | null;
+  documentNumber?: string | null;
+  documentExpiryDate?: string | null;
+  isEmailVerified?: boolean;
 }
 
 export default function AdminUsersPage() {
@@ -37,6 +50,8 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [createFormData, setCreateFormData] = useState({
     email: '',
     password: '',
@@ -46,6 +61,18 @@ export default function AdminUsersPage() {
     role: 'CLIENT' as 'CLIENT' | 'ADMIN',
     sendCredentialsEmail: true,
     generatePassword: true,
+    dateOfBirth: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: '',
+    profilePicture: '',
+    kycStatus: 'PENDING' as 'PENDING' | 'IN_PROGRESS' | 'VERIFIED' | 'REJECTED',
+    documentType: '',
+    documentNumber: '',
+    documentExpiryDate: '',
+    isEmailVerified: false,
   });
   const [creating, setCreating] = useState(false);
   const [editFormData, setEditFormData] = useState({
@@ -54,18 +81,34 @@ export default function AdminUsersPage() {
     phoneNumber: '',
     role: 'CLIENT' as 'CLIENT' | 'ADMIN',
     isActive: true,
+    email: '',
+    dateOfBirth: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: '',
+    profilePicture: '',
+    kycStatus: 'PENDING' as 'PENDING' | 'IN_PROGRESS' | 'VERIFIED' | 'REJECTED',
+    documentType: '',
+    documentNumber: '',
+    documentExpiryDate: '',
+    isEmailVerified: false,
   });
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     fetchUsers();
-  }, [searchTerm, roleFilter, statusFilter]);
+  }, [searchTerm, roleFilter, statusFilter, currentPage, itemsPerPage]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError('');
-      const params: any = {};
+      const params: any = {
+        limit: itemsPerPage,
+        offset: (currentPage - 1) * itemsPerPage,
+      };
       if (searchTerm) params.search = searchTerm;
       if (roleFilter) params.role = roleFilter;
       if (statusFilter !== '') params.isActive = statusFilter === 'active';
@@ -106,6 +149,55 @@ export default function AdminUsersPage() {
         'OK'
       );
     }
+  };
+
+  const handleUnlockAccount = async (user: User) => {
+    const isLocked = user.lockedUntil && new Date(user.lockedUntil) > new Date();
+    
+    if (!isLocked) {
+      confirmDialog.confirm(
+        'Account Not Locked',
+        'This account is not currently locked.',
+        () => {},
+        'info',
+        false,
+        false,
+        'OK'
+      );
+      return;
+    }
+
+    confirmDialog.confirm(
+      'Unlock Account',
+      `Are you sure you want to unlock the account for "${user.firstName} ${user.lastName}" (${user.email})?\n\nThis will reset their failed login attempts and allow them to log in again.`,
+      async () => {
+        try {
+          await api.admin.unlockAccount(user.id);
+          await fetchUsers();
+          confirmDialog.confirm(
+            'Success',
+            'Account unlocked successfully',
+            () => {},
+            'success',
+            false,
+            false,
+            'OK'
+          );
+        } catch (err: any) {
+          console.error('Failed to unlock account:', err);
+          confirmDialog.confirm(
+            'Error',
+            err.response?.data?.message || 'Failed to unlock account',
+            () => {},
+            'destructive',
+            false,
+            false,
+            'OK'
+          );
+        }
+      },
+      'default'
+    );
   };
 
   const handleDeleteUser = (user: User) => {
@@ -169,6 +261,21 @@ export default function AdminUsersPage() {
       phoneNumber: user.phoneNumber || '',
       role: user.role,
       isActive: user.isActive,
+      email: user.email,
+      dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+      address: user.address || '',
+      city: user.city || '',
+      state: user.state || '',
+      zipCode: user.zipCode || '',
+      country: user.country || '',
+      profilePicture: user.profilePicture || '',
+      kycStatus: (user.kycStatus as 'PENDING' | 'IN_PROGRESS' | 'VERIFIED' | 'REJECTED') || 'PENDING',
+      documentType: user.documentType || '',
+      documentNumber: user.documentNumber || '',
+      documentExpiryDate: user.documentExpiryDate
+        ? new Date(user.documentExpiryDate).toISOString().split('T')[0]
+        : '',
+      isEmailVerified: user.isEmailVerified || false,
     });
   };
 
@@ -180,13 +287,30 @@ export default function AdminUsersPage() {
     setEditError('');
 
     try {
-      await api.admin.updateUser(editingUser.id, {
+      const updateData: any = {
         firstName: editFormData.firstName,
         lastName: editFormData.lastName,
-        phoneNumber: editFormData.phoneNumber || undefined,
+        phoneNumber: editFormData.phoneNumber || null,
         role: editFormData.role,
         isActive: editFormData.isActive,
-      });
+        email: editFormData.email,
+        dateOfBirth: editFormData.dateOfBirth ? new Date(editFormData.dateOfBirth).toISOString() : null,
+        address: editFormData.address || null,
+        city: editFormData.city || null,
+        state: editFormData.state || null,
+        zipCode: editFormData.zipCode || null,
+        country: editFormData.country || null,
+        profilePicture: editFormData.profilePicture || null,
+        kycStatus: editFormData.kycStatus,
+        documentType: editFormData.documentType || null,
+        documentNumber: editFormData.documentNumber || null,
+        documentExpiryDate: editFormData.documentExpiryDate
+          ? new Date(editFormData.documentExpiryDate).toISOString()
+          : null,
+        isEmailVerified: editFormData.isEmailVerified,
+      };
+
+      await api.admin.updateUser(editingUser.id, updateData);
 
       await fetchUsers();
       setEditingUser(null);
@@ -216,9 +340,23 @@ export default function AdminUsersPage() {
         email: createFormData.email,
         firstName: createFormData.firstName,
         lastName: createFormData.lastName,
-        phoneNumber: createFormData.phoneNumber || undefined,
+        phoneNumber: createFormData.phoneNumber || null,
         role: createFormData.role,
         sendCredentialsEmail: createFormData.sendCredentialsEmail,
+        dateOfBirth: createFormData.dateOfBirth ? new Date(createFormData.dateOfBirth).toISOString() : null,
+        address: createFormData.address || null,
+        city: createFormData.city || null,
+        state: createFormData.state || null,
+        zipCode: createFormData.zipCode || null,
+        country: createFormData.country || null,
+        profilePicture: createFormData.profilePicture || null,
+        kycStatus: createFormData.kycStatus,
+        documentType: createFormData.documentType || null,
+        documentNumber: createFormData.documentNumber || null,
+        documentExpiryDate: createFormData.documentExpiryDate
+          ? new Date(createFormData.documentExpiryDate).toISOString()
+          : null,
+        isEmailVerified: createFormData.isEmailVerified,
       };
 
       // Only include password if not generating
@@ -261,6 +399,18 @@ export default function AdminUsersPage() {
         role: 'CLIENT',
         sendCredentialsEmail: true,
         generatePassword: true,
+        dateOfBirth: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: '',
+        profilePicture: '',
+        kycStatus: 'PENDING',
+        documentType: '',
+        documentNumber: '',
+        documentExpiryDate: '',
+        isEmailVerified: false,
       });
       fetchUsers();
     } catch (err: any) {
@@ -326,7 +476,7 @@ export default function AdminUsersPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -354,6 +504,22 @@ export default function AdminUsersPage() {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Items Per Page</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -398,6 +564,7 @@ export default function AdminUsersPage() {
                         </Badge>
                       </td>
                       <td className="p-4">
+                        <div className="flex flex-col gap-1">
                         <Badge
                           className={
                             user.isActive
@@ -407,6 +574,13 @@ export default function AdminUsersPage() {
                         >
                           {user.isActive ? 'Active' : 'Inactive'}
                         </Badge>
+                          {user.lockedUntil && new Date(user.lockedUntil) > new Date() && (
+                            <Badge className="bg-red-100 text-red-800 text-xs">
+                              <Lock className="h-3 w-3 mr-1 inline" />
+                              Locked
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <Badge className={getKycBadgeColor(user.kycStatus)}>
@@ -428,6 +602,17 @@ export default function AdminUsersPage() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {user.lockedUntil && new Date(user.lockedUntil) > new Date() && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUnlockAccount(user)}
+                              title="Unlock account"
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            >
+                              <Unlock className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -459,6 +644,39 @@ export default function AdminUsersPage() {
             </div>
           ) : (
             <p className="text-gray-500 text-center py-8">No users found</p>
+          )}
+
+          {/* Pagination */}
+          {users.length > 0 && (
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                {Math.min(currentPage * itemsPerPage, total)} of {total} users
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1 || loading}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {Math.ceil(total / itemsPerPage) || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(Math.ceil(total / itemsPerPage) || 1, prev + 1))
+                  }
+                  disabled={currentPage >= Math.ceil(total / itemsPerPage) || loading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -579,6 +797,168 @@ export default function AdminUsersPage() {
                   </label>
                 </div>
 
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Additional Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        value={createFormData.dateOfBirth}
+                        onChange={(e) => setCreateFormData({ ...createFormData, dateOfBirth: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        value={createFormData.country}
+                        onChange={(e) => setCreateFormData({ ...createFormData, country: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="United Kingdom"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        value={createFormData.city}
+                        onChange={(e) => setCreateFormData({ ...createFormData, city: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="London"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        State/Province
+                      </label>
+                      <input
+                        type="text"
+                        value={createFormData.state}
+                        onChange={(e) => setCreateFormData({ ...createFormData, state: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="England"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Address
+                      </label>
+                      <textarea
+                        value={createFormData.address}
+                        onChange={(e) => setCreateFormData({ ...createFormData, address: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        rows={2}
+                        placeholder="Street address"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Zip/Postal Code
+                      </label>
+                      <input
+                        type="text"
+                        value={createFormData.zipCode}
+                        onChange={(e) => setCreateFormData({ ...createFormData, zipCode: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="SW1A 1AA"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Profile Picture URL
+                      </label>
+                      <input
+                        type="url"
+                        value={createFormData.profilePicture}
+                        onChange={(e) => setCreateFormData({ ...createFormData, profilePicture: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">KYC & Verification</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        KYC Status
+                      </label>
+                      <select
+                        value={createFormData.kycStatus}
+                        onChange={(e) =>
+                          setCreateFormData({
+                            ...createFormData,
+                            kycStatus: e.target.value as 'PENDING' | 'IN_PROGRESS' | 'VERIFIED' | 'REJECTED',
+                          })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg"
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="VERIFIED">Verified</option>
+                        <option value="REJECTED">Rejected</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Document Type
+                      </label>
+                      <input
+                        type="text"
+                        value={createFormData.documentType}
+                        onChange={(e) => setCreateFormData({ ...createFormData, documentType: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="Passport, ID Card, etc."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Document Number
+                      </label>
+                      <input
+                        type="text"
+                        value={createFormData.documentNumber}
+                        onChange={(e) => setCreateFormData({ ...createFormData, documentNumber: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="Document number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Document Expiry Date
+                      </label>
+                      <input
+                        type="date"
+                        value={createFormData.documentExpiryDate}
+                        onChange={(e) => setCreateFormData({ ...createFormData, documentExpiryDate: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                      />
+                    </div>
+                    <div className="col-span-2 flex items-center">
+                      <input
+                        type="checkbox"
+                        id="isEmailVerified"
+                        checked={createFormData.isEmailVerified}
+                        onChange={(e) => setCreateFormData({ ...createFormData, isEmailVerified: e.target.checked })}
+                        className="w-4 h-4 text-primary border-gray-300 rounded"
+                      />
+                      <label htmlFor="isEmailVerified" className="ml-2 text-sm text-gray-700">
+                        Email is verified
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex gap-2 pt-4">
                   <Button
                     type="submit"
@@ -600,6 +980,18 @@ export default function AdminUsersPage() {
                         role: 'CLIENT',
                         sendCredentialsEmail: true,
                         generatePassword: true,
+                        dateOfBirth: '',
+                        address: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                        country: '',
+                        profilePicture: '',
+                        kycStatus: 'PENDING',
+                        documentType: '',
+                        documentNumber: '',
+                        documentExpiryDate: '',
+                        isEmailVerified: false,
                       });
                     }}
                     variant="outline"
@@ -617,7 +1009,7 @@ export default function AdminUsersPage() {
       {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-2xl font-bold mb-4">Edit User</h2>
               
@@ -628,17 +1020,31 @@ export default function AdminUsersPage() {
               )}
 
               <form onSubmit={handleUpdateUser} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
+                      Email *
                   </label>
                   <input
                     type="email"
-                    value={editingUser.email}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                      required
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={editFormData.phoneNumber}
+                      onChange={(e) => setEditFormData({ ...editFormData, phoneNumber: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg"
+                      placeholder="+44 20 1234 5678"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -651,7 +1057,7 @@ export default function AdminUsersPage() {
                       required
                       value={editFormData.firstName}
                       onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-3 py-2 border rounded-lg"
                     />
                   </div>
                   <div>
@@ -663,24 +1069,12 @@ export default function AdminUsersPage() {
                       required
                       value={editFormData.lastName}
                       onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-3 py-2 border rounded-lg"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={editFormData.phoneNumber}
-                    onChange={(e) => setEditFormData({ ...editFormData, phoneNumber: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="+44 20 1234 5678"
-                  />
-                </div>
-
+                <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Role *
@@ -689,7 +1083,7 @@ export default function AdminUsersPage() {
                     value={editFormData.role}
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'CLIENT' | 'ADMIN' })}
                     disabled={currentUser?.id === editingUser.id}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none ${
+                      className={`w-full px-3 py-2 border rounded-lg ${
                       currentUser?.id === editingUser.id ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''
                     }`}
                   >
@@ -699,30 +1093,195 @@ export default function AdminUsersPage() {
                   {currentUser?.id === editingUser.id && (
                     <p className="text-xs text-gray-500 mt-1">You cannot change your own role</p>
                   )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      value={editFormData.dateOfBirth}
+                      onChange={(e) => setEditFormData({ ...editFormData, dateOfBirth: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg"
+                    />
+                  </div>
                 </div>
 
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Address Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Address
+                      </label>
+                      <textarea
+                        value={editFormData.address}
+                        onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        rows={2}
+                        placeholder="Street address"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.city}
+                        onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="London"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        State/Province
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.state}
+                        onChange={(e) => setEditFormData({ ...editFormData, state: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="England"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Zip/Postal Code
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.zipCode}
+                        onChange={(e) => setEditFormData({ ...editFormData, zipCode: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="SW1A 1AA"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.country}
+                        onChange={(e) => setEditFormData({ ...editFormData, country: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="United Kingdom"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">KYC & Verification</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        KYC Status
+                      </label>
+                      <select
+                        value={editFormData.kycStatus}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            kycStatus: e.target.value as 'PENDING' | 'IN_PROGRESS' | 'VERIFIED' | 'REJECTED',
+                          })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg"
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="VERIFIED">Verified</option>
+                        <option value="REJECTED">Rejected</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Document Type
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.documentType}
+                        onChange={(e) => setEditFormData({ ...editFormData, documentType: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="Passport, ID Card, etc."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Document Number
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.documentNumber}
+                        onChange={(e) => setEditFormData({ ...editFormData, documentNumber: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="Document number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Document Expiry Date
+                      </label>
+                      <input
+                        type="date"
+                        value={editFormData.documentExpiryDate}
+                        onChange={(e) => setEditFormData({ ...editFormData, documentExpiryDate: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Profile Picture URL
+                      </label>
+                      <input
+                        type="url"
+                        value={editFormData.profilePicture}
+                        onChange={(e) => setEditFormData({ ...editFormData, profilePicture: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Account Status</h3>
+                  <div className="space-y-2">
                 <div className="flex items-center">
                   <input
                     type="checkbox"
-                    id="isActive"
+                        id="editIsActive"
                     checked={editFormData.isActive}
                     onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
                     disabled={currentUser?.id === editingUser.id}
-                    className={`w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary ${
+                        className={`w-4 h-4 text-primary border-gray-300 rounded ${
                       currentUser?.id === editingUser.id ? 'cursor-not-allowed opacity-50' : ''
                     }`}
                   />
-                  <label 
-                    htmlFor="isActive" 
-                    className={`ml-2 text-sm text-gray-700 ${
+                      <label htmlFor="editIsActive" className={`ml-2 text-sm text-gray-700 ${
                       currentUser?.id === editingUser.id ? 'text-gray-500' : ''
-                    }`}
-                  >
-                    Account is active
+                      }`}>
+                        User is active
                   </label>
                   {currentUser?.id === editingUser.id && (
                     <p className="text-xs text-gray-500 ml-2">You cannot deactivate your own account</p>
                   )}
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="editIsEmailVerified"
+                        checked={editFormData.isEmailVerified}
+                        onChange={(e) => setEditFormData({ ...editFormData, isEmailVerified: e.target.checked })}
+                        className="w-4 h-4 text-primary border-gray-300 rounded"
+                      />
+                      <label htmlFor="editIsEmailVerified" className="ml-2 text-sm text-gray-700">
+                        Email is verified
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-2 pt-4">

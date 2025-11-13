@@ -5,10 +5,21 @@ import { api } from '@/lib/api';
 import { portfolioSchema, type PortfolioInput } from '@/lib/schemas';
 import { useToastHelpers } from '@/components/ui/Toast';
 
+interface Portfolio {
+  id: string;
+  name: string;
+  description?: string | null;
+  isActive?: boolean;
+  totalValue?: number;
+  totalInvested?: number;
+  totalGain?: number;
+  gainPercentage?: number;
+}
+
 interface PortfolioFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
-  initialData?: any;
+  initialData?: Portfolio;
   isEditing?: boolean;
 }
 
@@ -23,10 +34,11 @@ export default function PortfolioForm({
     name: initialData?.name || '',
     description: initialData?.description || '',
     isActive: initialData?.isActive ?? true,
-    totalValue: initialData?.totalValue || undefined,
-    totalInvested: initialData?.totalInvested || undefined,
-    totalGain: initialData?.totalGain || undefined,
-    gainPercentage: initialData?.gainPercentage || undefined,
+    // Financial fields are not editable - they are calculated automatically
+    totalValue: undefined,
+    totalInvested: undefined,
+    totalGain: undefined,
+    gainPercentage: undefined,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,13 +68,15 @@ export default function PortfolioForm({
         success('Portfolio created successfully');
       }
       onSuccess?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Portfolio form error:', err);
-      if (err.errors) {
+      if (err && typeof err === 'object' && 'errors' in err) {
         // Zod validation errors
-        error('Validation failed', err.errors.map((e: any) => e.message).join(', '));
+        const zodError = err as { errors: Array<{ message: string }> };
+        error('Validation failed', zodError.errors.map((e) => e.message).join(', '));
       } else {
-        error('Failed to save portfolio', err.response?.data?.message || 'An unexpected error occurred');
+        const axiosError = err as { response?: { data?: { message?: string } } };
+        error('Failed to save portfolio', axiosError.response?.data?.message || 'An unexpected error occurred');
       }
     } finally {
       setIsSubmitting(false);
@@ -102,74 +116,6 @@ export default function PortfolioForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="totalValue" className="block text-sm font-medium text-gray-700 mb-1">
-            Total Value ($)
-          </label>
-          <input
-            type="number"
-            id="totalValue"
-            name="totalValue"
-            value={formData.totalValue || ''}
-            onChange={handleChange}
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="totalInvested" className="block text-sm font-medium text-gray-700 mb-1">
-            Total Invested ($)
-          </label>
-          <input
-            type="number"
-            id="totalInvested"
-            name="totalInvested"
-            value={formData.totalInvested || ''}
-            onChange={handleChange}
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="totalGain" className="block text-sm font-medium text-gray-700 mb-1">
-            Total Gain ($)
-          </label>
-          <input
-            type="number"
-            id="totalGain"
-            name="totalGain"
-            value={formData.totalGain || ''}
-            onChange={handleChange}
-            placeholder="0.00"
-            step="0.01"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="gainPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-            Gain Percentage (%)
-          </label>
-          <input
-            type="number"
-            id="gainPercentage"
-            name="gainPercentage"
-            value={formData.gainPercentage || ''}
-            onChange={handleChange}
-            placeholder="0.00"
-            step="0.01"
-            min="-100"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-      </div>
 
       <div className="flex items-center space-x-2">
         <input

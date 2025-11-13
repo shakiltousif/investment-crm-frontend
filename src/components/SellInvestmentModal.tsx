@@ -63,11 +63,13 @@ export default function SellInvestmentModal({
       setError(err.response?.data?.message || 'Failed to fetch preview');
       
       // Create a mock preview for demo purposes when API fails
+      const totalProceeds = investment.currentPrice * quantity;
+      const estimatedFee = totalProceeds * 0.001; // 0.1% fee
       const mockPreview = {
         unitPrice: investment.currentPrice,
-        totalProceeds: investment.currentPrice * quantity,
-        estimatedFee: investment.currentPrice * quantity * 0.01,
-        netProceeds: investment.currentPrice * quantity * 0.99,
+        totalProceeds: totalProceeds,
+        estimatedFee: estimatedFee,
+        netProceeds: totalProceeds - estimatedFee,
         gainLoss: (investment.currentPrice - investment.purchasePrice) * quantity,
         gainLossPercentage: ((investment.currentPrice - investment.purchasePrice) / investment.purchasePrice) * 100,
       };
@@ -194,7 +196,7 @@ export default function SellInvestmentModal({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Fee (1%):</span>
+                    <span className="text-sm">Fee (0.1%):</span>
                     <span className="font-semibold">
                       -£{parseFloat(preview.estimatedFee.toString()).toFixed(2)}
                     </span>

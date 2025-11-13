@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 
 interface Investment {
@@ -9,6 +10,8 @@ interface Investment {
   symbol?: string;
   currentPrice: number;
   type: string;
+  minimumInvestment?: number;
+  maximumInvestment?: number;
 }
 
 interface Portfolio {
@@ -31,7 +34,9 @@ export default function BuyInvestmentModal({
   onClose,
   onSuccess,
 }: BuyInvestmentModalProps) {
-  const [quantity, setQuantity] = useState<number>(1);
+  const router = useRouter();
+  // Start with empty string so user can type immediately
+  const [amount, setAmount] = useState<string>('');
   const [selectedPortfolio, setSelectedPortfolio] = useState<string>(portfolios[0]?.id || '');
   
   // Update selected portfolio when portfolios change
@@ -45,20 +50,47 @@ export default function BuyInvestmentModal({
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'input' | 'preview' | 'confirm'>('input');
 
+  // Convert amount string to number for calculations
+  const getAmountAsNumber = (): number => {
+    if (amount === '' || amount === null || amount === undefined) return 0;
+    const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // For amount-based investments, quantity is simply 1 (the amount is the investment value)
+  // The backend will handle the actual quantity calculation if needed
+  const calculateQuantity = (investmentAmount: number): number => {
+    // For fixed investments like bonds, use amount directly as quantity
+    // This allows buying any amount without price-based calculation
+    if (investment?.type === 'BOND' || investment?.type === 'CORPORATE_BOND' || investment?.type === 'TERM_DEPOSIT' || investment?.type === 'FIXED_RATE_DEPOSIT') {
+      return 1; // Quantity is 1, amount is the investment value
+    }
+    // For stocks and other price-based investments, calculate quantity if price exists
+    if (investment?.currentPrice && investment.currentPrice > 0) {
+      return investmentAmount / investment.currentPrice;
+    }
+    return 1; // Default to 1 if no price
+  };
+
+  // Get calculated quantity
+  const amountNumber = getAmountAsNumber();
+  const quantity = calculateQuantity(amountNumber);
+
   useEffect(() => {
-    if (selectedPortfolio && quantity > 0 && investment?.id) {
+    if (selectedPortfolio && amountNumber > 0 && investment?.id) {
       fetchPreview();
     }
-  }, [quantity, selectedPortfolio, investment?.id]);
+  }, [amountNumber, selectedPortfolio, investment?.id]);
 
   const fetchPreview = async () => {
     try {
       setError(null);
-      console.log('Fetching preview for:', { investmentId: investment.id, quantity, portfolioId: selectedPortfolio });
+      const calculatedQuantity = calculateQuantity(amountNumber);
+      console.log('Fetching preview for:', { investmentId: investment.id, quantity: calculatedQuantity, portfolioId: selectedPortfolio });
       
       const response = await api.marketplace.buyPreview({
         investmentId: investment.id,
-        quantity,
+        amount: amountNumber,
         portfolioId: selectedPortfolio,
       });
       
@@ -87,10 +119,11 @@ export default function BuyInvestmentModal({
     try {
       setLoading(true);
       setError(null);
+      const calculatedQuantity = calculateQuantity(amountNumber);
 
       await api.marketplace.buy({
         investmentId: investment.id,
-        quantity,
+        amount: amountNumber,
         portfolioId: selectedPortfolio,
       });
 
@@ -98,6 +131,8 @@ export default function BuyInvestmentModal({
       setTimeout(() => {
         onSuccess?.();
         onClose();
+        // Redirect to investments page after successful purchase
+        router.push('/investments');
       }, 2000);
     } catch (err: any) {
       if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
@@ -136,7 +171,7 @@ export default function BuyInvestmentModal({
                 <p className="font-semibold text-lg">{investment.name}</p>
                 {investment.symbol && <p className="text-sm text-gray-500">{investment.symbol}</p>}
                 <p className="text-sm text-gray-600 mt-2">
-                  Current Price: £{parseFloat(investment.currentPrice.toString()).toFixed(2)}
+                  Minimum Investment: £{investment.minimumInvestment ? parseFloat(investment.minimumInvestment.toString()).toFixed(2) : '0.00'}
                 </p>
               </div>
 
@@ -162,62 +197,81 @@ export default function BuyInvestmentModal({
                 )}
               </div>
 
-              {/* Quantity Input */}
+              {/* Amount Input */}
               <div>
-                <label className="block text-sm font-medium mb-2">Quantity</label>
+                <label className="block text-sm font-medium mb-2">Amount</label>
                 <input
                   type="number"
-                  min="1"
+                  min={investment.minimumInvestment || 0}
+                  max={investment.maximumInvestment || undefined}
                   step="0.01"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                  }}
+                  placeholder="Enter amount"
                   className="w-full px-3 py-2 border rounded-lg"
                 />
+                {investment.minimumInvestment && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Minimum: £{investment.minimumInvestment.toLocaleString()}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  {investment.maximumInvestment 
+                    ? `Maximum: £${investment.maximumInvestment.toLocaleString()}`
+                    : 'Maximum: Unlimited'}
+                </p>
+                {amountNumber > 0 && quantity > 0 && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    Quantity: {quantity.toFixed(4)} units
+                  </p>
+                )}
               </div>
 
               {/* Preview Summary */}
-              {preview && (
+              {preview && amountNumber > 0 && (
                 <div className="bg-blue-50 p-4 rounded-lg space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm">Total Cost:</span>
+                    <span className="text-sm">Investment Amount:</span>
                     <span className="font-semibold">
-                      £{parseFloat(preview.totalCost.toString()).toFixed(2)}
+                      £{amountNumber.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Fee (1%):</span>
+                    <span className="text-sm">Fee (0.1%):</span>
                     <span className="font-semibold">
-                      £{parseFloat(preview.estimatedFee.toString()).toFixed(2)}
+                      £{(amountNumber * 0.001).toFixed(2)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Total Amount:</span>
                     <span className="font-bold text-lg">
-                      £{parseFloat(preview.totalAmount.toString()).toFixed(2)}
+                      £{(amountNumber + (amountNumber * 0.001)).toFixed(2)}
                     </span>
                   </div>
                 </div>
               )}
 
               {/* Manual Calculation when preview fails */}
-              {!preview && !error && (
+              {!preview && !error && amountNumber > 0 && (
                 <div className="bg-blue-50 p-4 rounded-lg space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm">Total Cost:</span>
+                    <span className="text-sm">Investment Amount:</span>
                     <span className="font-semibold">
-                      £{(quantity * parseFloat(investment.currentPrice.toString())).toFixed(2)}
+                      £{amountNumber.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Fee (1%):</span>
+                    <span className="text-sm">Fee (0.1%):</span>
                     <span className="font-semibold">
-                      £{(quantity * parseFloat(investment.currentPrice.toString()) * 0.01).toFixed(2)}
+                      £{(amountNumber * 0.001).toFixed(2)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Total Amount:</span>
                     <span className="font-bold text-lg">
-                      £{(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
+                      £{(amountNumber + (amountNumber * 0.001)).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -241,19 +295,19 @@ export default function BuyInvestmentModal({
                   <span className="font-semibold">{investment.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Quantity:</span>
-                  <span className="font-semibold">{quantity}</span>
+                  <span>Amount:</span>
+                  <span className="font-semibold">£{amountNumber.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Unit Price:</span>
+                  <span>Fee (0.1%):</span>
                   <span className="font-semibold">
-                    £{parseFloat(investment.currentPrice.toString()).toFixed(2)}
+                    £{(amountNumber * 0.001).toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-medium">Total Amount:</span>
                   <span className="font-bold text-lg">
-                    £{(quantity * parseFloat(investment.currentPrice.toString()) * 1.01).toFixed(2)}
+                    £{(amountNumber + (amountNumber * 0.001)).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -261,7 +315,7 @@ export default function BuyInvestmentModal({
                 <p className="font-semibold mb-1">Terms & Conditions</p>
                 <p className="text-gray-700">
                   By clicking Confirm, you agree to purchase this investment at the current market
-                  price. A 1% transaction fee will be applied.
+                  price. A 0.1% transaction fee will be applied.
                 </p>
               </div>
             </>
@@ -287,7 +341,13 @@ export default function BuyInvestmentModal({
           {step === 'input' && (
             <button
               onClick={() => setStep('preview')}
-              disabled={portfolios.length === 0 || !selectedPortfolio || quantity <= 0}
+              disabled={
+                portfolios.length === 0 || 
+                !selectedPortfolio || 
+                amountNumber <= 0 ||
+                (investment.minimumInvestment && amountNumber < investment.minimumInvestment) ||
+                (investment.maximumInvestment && amountNumber > investment.maximumInvestment)
+              }
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Review

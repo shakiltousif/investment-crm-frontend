@@ -29,6 +29,8 @@ export default function BankAccountsPage() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -214,6 +216,16 @@ export default function BankAccountsPage() {
         onVerify={handleVerifyAccount}
         onSetPrimary={handleSetPrimary}
         onRefresh={fetchBankAccounts}
+        pagination={{
+          page: currentPage,
+          pageSize: itemsPerPage,
+          total: bankAccounts.length,
+          onPageChange: setCurrentPage,
+          onPageSizeChange: (size) => {
+            setItemsPerPage(size);
+            setCurrentPage(1);
+          },
+        }}
       />
     </div>
   );

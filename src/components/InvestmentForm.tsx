@@ -24,10 +24,7 @@ const INVESTMENT_TYPES = [
   { value: 'STOCK', label: 'Stock' },
   { value: 'BOND', label: 'Bond' },
   { value: 'TERM_DEPOSIT', label: 'Term Deposit' },
-  { value: 'PRIVATE_EQUITY', label: 'Private Equity' },
   { value: 'MUTUAL_FUND', label: 'Mutual Fund' },
-  { value: 'ETF', label: 'ETF' },
-  { value: 'CRYPTOCURRENCY', label: 'Cryptocurrency' },
   { value: 'OTHER', label: 'Other' },
 ];
 

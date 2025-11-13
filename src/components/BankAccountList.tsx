@@ -25,6 +25,13 @@ interface BankAccountListProps {
   onVerify?: (accountId: string) => void;
   onSetPrimary?: (accountId: string) => void;
   onRefresh?: () => void;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+  };
 }
 
 export default function BankAccountList({
@@ -34,7 +41,11 @@ export default function BankAccountList({
   onVerify,
   onSetPrimary,
   onRefresh,
+  pagination,
 }: BankAccountListProps) {
+  const displayAccounts = pagination
+    ? bankAccounts.slice((pagination.page - 1) * pagination.pageSize, pagination.page * pagination.pageSize)
+    : bankAccounts;
   if (bankAccounts.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -46,7 +57,7 @@ export default function BankAccountList({
 
   return (
     <div className="space-y-4">
-      {bankAccounts.map((account) => (
+      {displayAccounts.map((account) => (
         <div
           key={account.id}
           className={`bg-white rounded-lg shadow p-6 border-l-4 ${
@@ -143,6 +154,52 @@ export default function BankAccountList({
           )}
         </div>
       ))}
+
+      {/* Pagination */}
+      {pagination && bankAccounts.length > pagination.pageSize && (
+        <div className="flex justify-between items-center mt-6 pt-4 border-t">
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-600">
+              Showing {((pagination.page - 1) * pagination.pageSize) + 1} to {Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total} accounts
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Items per page:</label>
+              <select
+                value={pagination.pageSize}
+                onChange={(e) => {
+                  pagination.onPageSizeChange(Number(e.target.value));
+                  pagination.onPageChange(1);
+                }}
+                className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary outline-none"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => pagination.onPageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {pagination.page} of {Math.ceil(pagination.total / pagination.pageSize)}
+            </span>
+            <button
+              onClick={() => pagination.onPageChange(pagination.page + 1)}
+              disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

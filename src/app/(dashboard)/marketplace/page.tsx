@@ -29,7 +29,7 @@ interface MarketplaceInvestment {
 }
 
 export default function MarketplacePage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [investments, setInvestments] = useState<MarketplaceInvestment[]>([]);
   const [portfolios, setPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,7 @@ export default function MarketplacePage() {
   const [editingItem, setEditingItem] = useState<MarketplaceInvestment | null>(null);
   const [detailsItem, setDetailsItem] = useState<MarketplaceInvestment | null>(null);
   const [liveQuotes, setLiveQuotes] = useState<Map<string, any>>(new Map());
+  const [userInvestments, setUserInvestments] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     type: '',
     riskLevel: '',
@@ -55,6 +56,7 @@ export default function MarketplacePage() {
     if (isAuthenticated) {
       fetchMarketplaceInvestments();
       fetchPortfolios();
+      fetchUserInvestments();
     }
   }, [isAuthenticated, filters]);
 
@@ -162,6 +164,17 @@ export default function MarketplacePage() {
     }
   };
 
+  const fetchUserInvestments = async () => {
+    try {
+      const response = await api.investments.getAll({});
+      const userInvestmentsData = response.data || [];
+      setUserInvestments(Array.isArray(userInvestmentsData) ? userInvestmentsData : []);
+    } catch (err: any) {
+      console.warn('User investments API not available:', err);
+      setUserInvestments([]);
+    }
+  };
+
   const handleBuyInvestment = (investment: MarketplaceInvestment) => {
     setSelectedInvestment(investment);
     setShowBuyModal(true);
@@ -180,6 +193,7 @@ export default function MarketplacePage() {
   const handleModalSuccess = () => {
     handleModalClose();
     fetchMarketplaceInvestments();
+    fetchUserInvestments(); // Refresh user investments to update purchase status
   };
 
   const handleAddInvestment = () => {
@@ -274,18 +288,14 @@ export default function MarketplacePage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={updatePricesWithLiveQuotes}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-            >
-              Update Live Prices
-            </button>
-            <button
-              onClick={handleAddInvestment}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
-            >
-              Add Investment
-            </button>
+            {user?.role === 'ADMIN' && (
+              <button
+                onClick={updatePricesWithLiveQuotes}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              >
+                Update Live Prices
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -328,10 +338,7 @@ export default function MarketplacePage() {
               <option value="STOCK">Stock</option>
               <option value="BOND">Bond</option>
               <option value="TERM_DEPOSIT">Term Deposit</option>
-              <option value="PRIVATE_EQUITY">Private Equity</option>
               <option value="MUTUAL_FUND">Mutual Fund</option>
-              <option value="ETF">ETF</option>
-              <option value="CRYPTOCURRENCY">Cryptocurrency</option>
             </select>
           </div>
           
@@ -414,10 +421,10 @@ export default function MarketplacePage() {
           investments={investments}
           onBuy={handleBuyInvestment}
           onApply={handleApplyInvestment}
-          onEdit={handleEditInvestment}
           onDetails={handleDetailsInvestment}
           onRefresh={fetchMarketplaceInvestments}
           liveQuotes={liveQuotes}
+          userInvestments={userInvestments}
         />
 
       {/* Buy Investment Modal */}
@@ -441,7 +448,7 @@ export default function MarketplacePage() {
         />
       )}
 
-      {/* Investment Application Modal */}
+      {/* Investment Enrollment Modal */}
       {showApplicationModal && selectedInvestment && (
         <InvestmentApplicationModal
           investment={selectedInvestment}

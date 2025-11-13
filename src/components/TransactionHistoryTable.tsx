@@ -36,22 +36,20 @@ export default function TransactionHistoryTable({
   portfolioId,
   onRefresh,
 }: TransactionHistoryTableProps) {
-  const [pagination, setPagination] = useState({
-    total: 0,
-    pages: 0,
-    currentPage: 1,
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   // Calculate pagination from transactions data
+  const total = transactions.length;
+  const totalPages = Math.ceil(total / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTransactions = transactions.slice(startIndex, endIndex);
+
+  // Reset to page 1 when items per page changes
   useEffect(() => {
-    if (transactions.length > 0) {
-      setPagination({
-        total: transactions.length,
-        pages: Math.ceil(transactions.length / 20),
-        currentPage: 1,
-      });
-    }
-  }, [transactions]);
+    setCurrentPage(1);
+  }, [itemsPerPage]);
 
 
   const handleExportCSV = () => {
@@ -123,7 +121,7 @@ export default function TransactionHistoryTable({
             </tr>
           </thead>
           <tbody>
-            {transactions.map((transaction) => (
+            {paginatedTransactions.map((transaction) => (
               <tr key={transaction.id} className="border-b hover:bg-gray-50">
                 <td className="px-6 py-4 text-sm">
                   {new Date(transaction.transactionDate).toLocaleDateString()}
@@ -151,25 +149,50 @@ export default function TransactionHistoryTable({
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          Page {pagination.currentPage} of {pagination.pages} (Total: {pagination.total})
+      {transactions.length > 0 && (
+        <div className="flex justify-between items-center px-6 py-4 border-t">
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, total)} of {total} results
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Items per page:</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary outline-none"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages || 1}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage >= totalPages}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
-        <div className="space-x-2">
-          <button
-            disabled={pagination.currentPage === 1}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            disabled={pagination.currentPage === pagination.pages}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

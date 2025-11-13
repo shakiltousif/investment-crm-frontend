@@ -231,10 +231,7 @@ export default function AddEditInvestmentModal({
                 <option value="STOCK">Stock</option>
                 <option value="BOND">Bond</option>
                 <option value="TERM_DEPOSIT">Term Deposit</option>
-                <option value="PRIVATE_EQUITY">Private Equity</option>
                 <option value="MUTUAL_FUND">Mutual Fund</option>
-                <option value="ETF">ETF</option>
-                <option value="CRYPTOCURRENCY">Cryptocurrency</option>
                 <option value="OTHER">Other</option>
               </select>
             </div>

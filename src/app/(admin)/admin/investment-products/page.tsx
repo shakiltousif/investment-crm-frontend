@@ -19,17 +19,13 @@ export default function InvestmentProductsPage() {
     name: '',
     symbol: '',
     description: '',
-    currentPrice: '',
     minimumInvestment: '',
-    maximumInvestment: '',
     currency: 'GBP',
     riskLevel: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
-    expectedReturn: '',
     issuer: '',
     maturityDate: '',
     couponRate: '',
-    payoutFrequency: 'QUARTERLY' as 'MONTHLY' | 'QUARTERLY' | 'ANNUAL',
-    nextPayoutDate: '',
+    payoutFrequency: 'QUARTERLY' as 'MONTHLY' | 'QUARTERLY' | 'BI_ANNUALLY' | 'ANNUAL',
   });
 
   // Savings form state
@@ -81,17 +77,13 @@ export default function InvestmentProductsPage() {
         name: '',
         symbol: '',
         description: '',
-        currentPrice: '',
         minimumInvestment: '',
-        maximumInvestment: '',
         currency: 'GBP',
         riskLevel: 'MEDIUM',
-        expectedReturn: '',
         issuer: '',
         maturityDate: '',
         couponRate: '',
         payoutFrequency: 'QUARTERLY',
-        nextPayoutDate: '',
       });
     } else if (type === 'savings') {
       setSavingsForm({
@@ -145,17 +137,13 @@ export default function InvestmentProductsPage() {
         name: bondForm.name,
         symbol: bondForm.symbol || undefined,
         description: bondForm.description || undefined,
-        currentPrice: parseFloat(bondForm.currentPrice),
         minimumInvestment: parseFloat(bondForm.minimumInvestment),
-        maximumInvestment: bondForm.maximumInvestment ? parseFloat(bondForm.maximumInvestment) : undefined,
         currency: bondForm.currency,
         riskLevel: bondForm.riskLevel,
-        expectedReturn: bondForm.expectedReturn ? parseFloat(bondForm.expectedReturn) : undefined,
         issuer: bondForm.issuer,
         maturityDate: new Date(bondForm.maturityDate).toISOString(),
         couponRate: parseFloat(bondForm.couponRate),
         payoutFrequency: bondForm.payoutFrequency,
-        nextPayoutDate: bondForm.nextPayoutDate ? new Date(bondForm.nextPayoutDate).toISOString() : undefined,
       };
 
       await api.investmentProducts.createBond(data);
@@ -364,7 +352,7 @@ export default function InvestmentProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Symbol</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ISIN</label>
                     <input
                       type="text"
                       value={bondForm.symbol}
@@ -386,47 +374,26 @@ export default function InvestmentProductsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Price *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={bondForm.currentPrice}
-                      onChange={(e) => setBondForm({ ...bondForm, currentPrice: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="100.00"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Investment *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={bondForm.minimumInvestment}
-                      onChange={(e) => setBondForm({ ...bondForm, minimumInvestment: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="1000.00"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Investment</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={bondForm.maximumInvestment}
-                      onChange={(e) => setBondForm({ ...bondForm, maximumInvestment: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="100000.00"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Investment <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={bondForm.minimumInvestment}
+                    onChange={(e) => setBondForm({ ...bondForm, minimumInvestment: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="1000.00"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Currency <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={bondForm.currency}
                       onChange={(e) => setBondForm({ ...bondForm, currency: e.target.value })}
@@ -434,11 +401,13 @@ export default function InvestmentProductsPage() {
                     >
                       <option value="GBP">GBP</option>
                       <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
+                      <option value="USD">USD</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Risk Level *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Risk Level <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={bondForm.riskLevel}
                       onChange={(e) => setBondForm({ ...bondForm, riskLevel: e.target.value as 'LOW' | 'MEDIUM' | 'HIGH' })}
@@ -448,17 +417,6 @@ export default function InvestmentProductsPage() {
                       <option value="MEDIUM">Medium</option>
                       <option value="HIGH">High</option>
                     </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Expected Return (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={bondForm.expectedReturn}
-                      onChange={(e) => setBondForm({ ...bondForm, expectedReturn: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="5.5"
-                    />
                   </div>
                 </div>
 
@@ -505,24 +463,15 @@ export default function InvestmentProductsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Payout Frequency *</label>
                     <select
                       value={bondForm.payoutFrequency}
-                      onChange={(e) => setBondForm({ ...bondForm, payoutFrequency: e.target.value as 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' })}
+                      onChange={(e) => setBondForm({ ...bondForm, payoutFrequency: e.target.value as 'MONTHLY' | 'QUARTERLY' | 'BI_ANNUALLY' | 'ANNUAL' })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                     >
                       <option value="MONTHLY">Monthly</option>
                       <option value="QUARTERLY">Quarterly</option>
+                      <option value="BI_ANNUALLY">Bi-Annually</option>
                       <option value="ANNUAL">Annual</option>
                     </select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Next Payout Date</label>
-                  <input
-                    type="datetime-local"
-                    value={bondForm.nextPayoutDate}
-                    onChange={(e) => setBondForm({ ...bondForm, nextPayoutDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
                 </div>
 
                 <div className="flex gap-2 pt-4">

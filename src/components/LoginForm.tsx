@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { extractErrorMessage } from '@/lib/errorHandling';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -48,7 +49,9 @@ export default function LoginForm() {
       // Redirect to dashboard after successful login
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      // Extract error message safely using utility function
+      const errorMessage = extractErrorMessage(err, 'Login failed. Please check your credentials.');
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

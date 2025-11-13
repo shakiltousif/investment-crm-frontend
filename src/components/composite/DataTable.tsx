@@ -244,10 +244,28 @@ export function DataTable<T extends Record<string, any>>({
             {/* Pagination */}
             {pagination && (
               <div className="flex items-center justify-between px-4 py-3 border-t">
-                <div className="text-sm text-muted-foreground">
-                  Showing {((pagination.page - 1) * pagination.pageSize) + 1} to{' '}
-                  {Math.min(pagination.page * pagination.pageSize, pagination.total)} of{' '}
-                  {pagination.total} results
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {((pagination.page - 1) * pagination.pageSize) + 1} to{' '}
+                    {Math.min(pagination.page * pagination.pageSize, pagination.total)} of{' '}
+                    {pagination.total} results
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">Items per page:</label>
+                    <select
+                      value={pagination.pageSize}
+                      onChange={(e) => {
+                        pagination.onPageSizeChange(Number(e.target.value));
+                        pagination.onPageChange(1);
+                      }}
+                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary outline-none"
+                    >
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -287,13 +305,21 @@ export function InvestmentTable({
   onBuy, 
   onSell, 
   onDelete,
-  loading = false 
+  loading = false,
+  pagination,
 }: {
   investments: any[];
   onBuy?: (investment: any) => void;
   onSell?: (investment: any) => void;
   onDelete?: (investment: any) => void;
   loading?: boolean;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+  };
 }) {
   const columns: Column<any>[] = [
     {
@@ -397,6 +423,7 @@ export function InvestmentTable({
       exportable
       loading={loading}
       emptyMessage="No investments found. Start by buying your first investment from the marketplace."
+      pagination={pagination}
     />
   );
 }

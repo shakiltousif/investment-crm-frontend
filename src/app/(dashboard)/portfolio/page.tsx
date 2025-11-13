@@ -25,6 +25,8 @@ export default function PortfolioPage() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState<Portfolio | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -82,9 +84,10 @@ export default function PortfolioPage() {
         ];
         setPortfolios(mockPortfolios);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Portfolio fetch error:', err);
-      setError(err.response?.data?.message || 'Failed to load portfolios');
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      setError(axiosError.response?.data?.message || 'Failed to load portfolios');
     } finally {
       setLoading(false);
     }
@@ -108,9 +111,10 @@ export default function PortfolioPage() {
     try {
       await api.portfolios.delete(id);
       await fetchPortfolios();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Portfolio delete error:', err);
-      setError(err.response?.data?.message || 'Failed to delete portfolio');
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      setError(axiosError.response?.data?.message || 'Failed to delete portfolio');
     }
   };
 
@@ -177,7 +181,7 @@ export default function PortfolioPage() {
       {portfolios.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-2">No portfolios found</h3>
-          <p className="text-gray-600 mb-4">Create your first portfolio to start tracking your investments.</p>
+          <p className="text-gray-600 mb-4">Create portfolio to place orders on investments</p>
           <button
             onClick={handleCreatePortfolio}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
@@ -186,8 +190,34 @@ export default function PortfolioPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {portfolios.map((portfolio) => (
+        <>
+          {/* Items Per Page */}
+          <div className="bg-white rounded-lg shadow p-4 mb-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Items Per Page:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div className="text-sm text-gray-600">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, portfolios.length)} of {portfolios.length} portfolios
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {portfolios.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((portfolio) => (
             <div key={portfolio.id} className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">{portfolio.name}</h3>
@@ -245,6 +275,32 @@ export default function PortfolioPage() {
             </div>
           ))}
         </div>
+
+        {/* Pagination */}
+        {portfolios.length > itemsPerPage && (
+          <div className="flex justify-between items-center mt-6">
+            <div className="text-sm text-gray-600">
+              Page {currentPage} of {Math.ceil(portfolios.length / itemsPerPage)}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(portfolios.length / itemsPerPage), prev + 1))}
+                disabled={currentPage >= Math.ceil(portfolios.length / itemsPerPage)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

@@ -156,7 +156,7 @@ export function NoPortfolioEmptyState({
     <EmptyState
       icon={<BarChart3 />}
       title="No portfolio found"
-      description="Create your first portfolio to start tracking your investments and performance."
+      description="Create portfolio to place orders on investments"
       action={onCreatePortfolio ? {
         label: "Create Portfolio",
         onClick: onCreatePortfolio,

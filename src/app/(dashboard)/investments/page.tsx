@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import InvestmentList from '@/components/InvestmentList';
+import MarketplaceList from '@/components/MarketplaceList';
 import BuyInvestmentModal from '@/components/BuyInvestmentModal';
 import SellInvestmentModal from '@/components/SellInvestmentModal';
 
@@ -29,6 +30,7 @@ export default function InvestmentsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [marketplaceInvestments, setMarketplaceInvestments] = useState<any[]>([]);
   const [portfolios, setPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -40,11 +42,15 @@ export default function InvestmentsPage() {
     type: '',
     search: '',
   });
+  const [showingMarketplace, setShowingMarketplace] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchInvestments();
       fetchPortfolios();
+      fetchMarketplaceInvestments();
     }
   }, [isAuthenticated, filters]);
 
@@ -60,67 +66,39 @@ export default function InvestmentsPage() {
 
       try {
         const response = await api.investments.getAll(params);
-        setInvestments(response.data);
+        const userInvestments = response.data || [];
+        setInvestments(userInvestments);
+        
+        // If user has no investments, automatically show marketplace
+        if (userInvestments.length === 0) {
+          setShowingMarketplace(true);
+        } else {
+          setShowingMarketplace(false);
+        }
       } catch (apiErr) {
         console.warn('Investments API not available:', apiErr);
-        // Use mock data for demo purposes
-        const mockInvestments: Investment[] = [
-          {
-            id: '1',
-            name: 'Apple Inc.',
-            type: 'STOCK',
-            symbol: 'AAPL',
-            quantity: 100,
-            purchasePrice: 150.00,
-            currentPrice: 175.50,
-            totalValue: 17550,
-            totalInvested: 15000,
-            totalGain: 2550,
-            gainPercentage: 17.0,
-            purchaseDate: '2023-01-15',
-            portfolioId: '1',
-            portfolioName: 'Growth Portfolio'
-          },
-          {
-            id: '2',
-            name: 'Microsoft Corporation',
-            type: 'STOCK',
-            symbol: 'MSFT',
-            quantity: 50,
-            purchasePrice: 300.00,
-            currentPrice: 320.00,
-            totalValue: 16000,
-            totalInvested: 15000,
-            totalGain: 1000,
-            gainPercentage: 6.67,
-            purchaseDate: '2023-03-20',
-            portfolioId: '1',
-            portfolioName: 'Growth Portfolio'
-          },
-          {
-            id: '3',
-            name: 'Tesla Inc.',
-            type: 'STOCK',
-            symbol: 'TSLA',
-            quantity: 25,
-            purchasePrice: 200.00,
-            currentPrice: 180.00,
-            totalValue: 4500,
-            totalInvested: 5000,
-            totalGain: -500,
-            gainPercentage: -10.0,
-            purchaseDate: '2023-06-10',
-            portfolioId: '2',
-            portfolioName: 'Tech Portfolio'
-          }
-        ];
-        setInvestments(mockInvestments);
+        setInvestments([]);
+        // If no investments, show marketplace
+        setShowingMarketplace(true);
       }
     } catch (err: any) {
       console.error('Investments fetch error:', err);
       setError(err.response?.data?.message || 'Failed to load investments');
+      setInvestments([]);
+      setShowingMarketplace(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMarketplaceInvestments = async () => {
+    try {
+      const response = await api.marketplace.getAvailable({});
+      const marketplaceData = response.data?.data || response.data || [];
+      setMarketplaceInvestments(Array.isArray(marketplaceData) ? marketplaceData : []);
+    } catch (err: any) {
+      console.warn('Marketplace API not available:', err);
+      setMarketplaceInvestments([]);
     }
   };
 
@@ -245,10 +223,7 @@ export default function InvestmentsPage() {
               <option value="STOCK">Stock</option>
               <option value="BOND">Bond</option>
               <option value="TERM_DEPOSIT">Term Deposit</option>
-              <option value="PRIVATE_EQUITY">Private Equity</option>
               <option value="MUTUAL_FUND">Mutual Fund</option>
-              <option value="ETF">ETF</option>
-              <option value="CRYPTOCURRENCY">Cryptocurrency</option>
             </select>
           </div>
           
@@ -267,12 +242,50 @@ export default function InvestmentsPage() {
         </div>
       </div>
 
-      <InvestmentList
-        investments={investments}
-        onBuy={handleBuyInvestment}
-        onSell={handleSellInvestment}
-        onRefresh={fetchInvestments}
-      />
+      {showingMarketplace && investments.length === 0 ? (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Available Investments</h2>
+            <button
+              onClick={() => {
+                setShowingMarketplace(false);
+                fetchInvestments();
+              }}
+              className="text-sm text-primary hover:text-primary/80"
+            >
+              View My Investments
+            </button>
+          </div>
+          <MarketplaceList
+            investments={marketplaceInvestments}
+            onBuy={(investment) => {
+              router.push('/marketplace');
+            }}
+            onDetails={(investment) => {
+              router.push('/marketplace');
+            }}
+            onRefresh={fetchMarketplaceInvestments}
+            userInvestments={investments}
+          />
+        </div>
+      ) : (
+        <InvestmentList
+          investments={investments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+          onBuy={handleBuyInvestment}
+          onSell={handleSellInvestment}
+          onRefresh={fetchInvestments}
+          pagination={{
+            page: currentPage,
+            pageSize: itemsPerPage,
+            total: investments.length,
+            onPageChange: setCurrentPage,
+            onPageSizeChange: (size) => {
+              setItemsPerPage(size);
+              setCurrentPage(1);
+            },
+          }}
+        />
+      )}
 
       {/* Buy Investment Modal */}
       {showBuyModal && selectedInvestment && (
