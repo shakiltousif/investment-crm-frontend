@@ -1123,6 +1123,7 @@ export default function AdminMarketplacePage() {
             expectedReturn: viewingItem.expectedReturn || undefined,
             maturityDate: viewingItem.maturityDate || undefined,
             isAvailable: viewingItem.isAvailable,
+            category: viewingItem.category || '',
             issuer: viewingItem.issuer || '',
             createdAt: viewingItem.createdAt,
           }}

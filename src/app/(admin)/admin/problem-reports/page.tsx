@@ -153,42 +153,48 @@ export default function AdminProblemReportsPage() {
     }
   };
 
-  const handleResolve = async (reportId: string) => {
-    const confirmed = await confirmDialog.confirm({
-      title: 'Resolve Problem Report',
-      message: 'Are you sure you want to mark this problem report as resolved?',
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.admin.problemReports.updateStatus(reportId, { status: 'RESOLVED' });
-      await fetchReports();
-      if (selectedReport && selectedReport.id === reportId) {
-        await handleView(reportId);
-      }
-    } catch (err: any) {
-      setError(extractErrorMessage(err));
-    }
+  const handleResolve = (reportId: string) => {
+    confirmDialog.confirm(
+      'Resolve Problem Report',
+      'Are you sure you want to mark this problem report as resolved?',
+      async () => {
+        try {
+          await api.admin.problemReports.updateStatus(reportId, { status: 'RESOLVED' });
+          await fetchReports();
+          if (selectedReport && selectedReport.id === reportId) {
+            await handleView(reportId);
+          }
+        } catch (err: any) {
+          setError(extractErrorMessage(err));
+        }
+      },
+      'default',
+      false,
+      true,
+      'Resolve'
+    );
   };
 
-  const handleReopen = async (reportId: string) => {
-    const confirmed = await confirmDialog.confirm({
-      title: 'Reopen Problem Report',
-      message: 'Are you sure you want to reopen this problem report?',
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.admin.problemReports.updateStatus(reportId, { status: 'OPEN' });
-      await fetchReports();
-      if (selectedReport && selectedReport.id === reportId) {
-        await handleView(reportId);
-      }
-    } catch (err: any) {
-      setError(extractErrorMessage(err));
-    }
+  const handleReopen = (reportId: string) => {
+    confirmDialog.confirm(
+      'Reopen Problem Report',
+      'Are you sure you want to reopen this problem report?',
+      async () => {
+        try {
+          await api.admin.problemReports.updateStatus(reportId, { status: 'OPEN' });
+          await fetchReports();
+          if (selectedReport && selectedReport.id === reportId) {
+            await handleView(reportId);
+          }
+        } catch (err: any) {
+          setError(extractErrorMessage(err));
+        }
+      },
+      'default',
+      false,
+      true,
+      'Reopen'
+    );
   };
 
   const getStatusBadge = (status: string) => {

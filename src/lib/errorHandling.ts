@@ -265,6 +265,7 @@ export interface AxiosErrorResponse {
       error?: string | { message?: string };
     };
   };
+  request?: unknown;
   message?: string;
 }
 
@@ -298,11 +299,6 @@ export function extractErrorMessage(error: unknown, fallback: string = 'An error
     // Check for direct message property in response data
     if (responseData?.message && typeof responseData.message === 'string') {
       return responseData.message;
-    }
-    
-    // Check nested data.message
-    if (responseData?.data?.message && typeof responseData.data.message === 'string') {
-      return responseData.data.message;
     }
     
     // If response data is a string, use it

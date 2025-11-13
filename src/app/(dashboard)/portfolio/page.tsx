@@ -170,7 +170,7 @@ export default function PortfolioPage() {
             {editingPortfolio ? 'Edit Portfolio' : 'Create New Portfolio'}
           </h2>
           <PortfolioForm
-            initialData={editingPortfolio}
+            initialData={editingPortfolio || undefined}
             isEditing={!!editingPortfolio}
             onSuccess={handleFormSuccess}
             onCancel={handleFormCancel}

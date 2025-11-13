@@ -341,13 +341,13 @@ export default function BuyInvestmentModal({
           {step === 'input' && (
             <button
               onClick={() => setStep('preview')}
-              disabled={
+              disabled={Boolean(
                 portfolios.length === 0 || 
                 !selectedPortfolio || 
                 amountNumber <= 0 ||
                 (investment.minimumInvestment && amountNumber < investment.minimumInvestment) ||
                 (investment.maximumInvestment && amountNumber > investment.maximumInvestment)
-              }
+              )}
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Review

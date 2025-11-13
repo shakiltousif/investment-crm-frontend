@@ -234,29 +234,30 @@ export default function AdminDocumentsPage() {
     }
   };
 
-  const handleDelete = async (document: Document) => {
-    const confirmed = await confirmDialog.confirm({
-      title: 'Delete Document',
-      message: `Are you sure you want to delete "${document.fileName}"? This action cannot be undone.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.admin.documents.delete(document.id);
-      fetchDocuments();
-    } catch (err: any) {
-      console.error('Failed to delete document:', err);
-      setError(extractErrorMessage(err, 'Failed to delete document'));
-    }
+  const handleDelete = (document: Document) => {
+    confirmDialog.confirm(
+      'Delete Document',
+      `Are you sure you want to delete "${document.fileName}"? This action cannot be undone.`,
+      async () => {
+        try {
+          await api.admin.documents.delete(document.id);
+          fetchDocuments();
+        } catch (err: any) {
+          console.error('Failed to delete document:', err);
+          setError(extractErrorMessage(err, 'Failed to delete document'));
+        }
+      },
+      'destructive',
+      false,
+      true,
+      'Delete'
+    );
   };
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = async (doc: Document) => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const downloadUrl = document.downloadUrl || `${apiUrl}/api/documents/${document.id}/download`;
+      const downloadUrl = doc.downloadUrl || `${apiUrl}/api/documents/${doc.id}/download`;
 
       const token = localStorage.getItem('accessToken');
 
@@ -274,7 +275,7 @@ export default function AdminDocumentsPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = document.fileName;
+      a.download = doc.fileName;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -864,6 +865,9 @@ export default function AdminDocumentsPage() {
           }}
         />
       )}
+
+      {/* Confirm Dialog */}
+      {confirmDialog.dialog}
     </div>
   );
 }

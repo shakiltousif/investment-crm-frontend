@@ -239,23 +239,24 @@ export default function AdminBankAccountsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmed = await confirmDialog.confirm({
-      title: 'Delete Bank Account',
-      message: 'Are you sure you want to delete this bank account? This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.admin.bankAccounts.delete(id);
-      fetchBankAccounts();
-    } catch (err: any) {
-      console.error('Failed to delete bank account:', err);
-      setError(extractErrorMessage(err, 'Failed to delete bank account'));
-    }
+  const handleDelete = (id: string) => {
+    confirmDialog.confirm(
+      'Delete Bank Account',
+      'Are you sure you want to delete this bank account? This action cannot be undone.',
+      async () => {
+        try {
+          await api.admin.bankAccounts.delete(id);
+          fetchBankAccounts();
+        } catch (err: any) {
+          console.error('Failed to delete bank account:', err);
+          setError(extractErrorMessage(err, 'Failed to delete bank account'));
+        }
+      },
+      'destructive',
+      false,
+      true,
+      'Delete'
+    );
   };
 
   const handleVerify = async (id: string) => {
