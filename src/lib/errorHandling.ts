@@ -221,7 +221,18 @@ export function handleErrorBoundaryError(error: Error, errorInfo: { componentSta
 }
 
 // API error interceptor
-export function setupAPIErrorHandling(axiosInstance: { interceptors: { response: { use: (onFulfilled?: unknown, onRejected?: (error: unknown) => unknown) => void } } } }) {
+type AxiosInstance = {
+  interceptors: {
+    response: {
+      use: (
+        onFulfilled?: (response: AxiosResponse) => AxiosResponse,
+        onRejected?: (error: AxiosError) => unknown
+      ) => void;
+    };
+  };
+};
+
+export function setupAPIErrorHandling(axiosInstance: AxiosInstance) {
   axiosInstance.interceptors.response.use(
     (response: AxiosResponse) => response,
     (error: AxiosError) => {
