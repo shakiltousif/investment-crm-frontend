@@ -53,12 +53,43 @@ export default function PortfolioAllocationChart({ portfolioId }: PortfolioAlloc
       const response = await api.analytics.getPortfolioAllocation();
       const data = response.data.data || response.data || [];
       
-      // Convert all Decimal values to numbers
-      const processed = Array.isArray(data) ? data.map((item: any) => ({
-        ...item,
-        value: toNumber(item.value),
-        percentage: toNumber(item.percentage),
-      })) : [];
+      // Handle nested structure (portfolios with investments array)
+      // or flat structure (array of investments)
+      let investments: any[] = [];
+      
+      if (Array.isArray(data)) {
+        // Check if first item has 'investments' property (nested structure)
+        if (data.length > 0 && data[0].investments && Array.isArray(data[0].investments)) {
+          // Flatten: extract all investments from all portfolios
+          investments = data.flatMap((portfolio: any) => 
+            (portfolio.investments || []).map((inv: any) => ({
+              investmentId: inv.investmentId || inv.id,
+              name: inv.name,
+              symbol: inv.symbol || '',
+              type: inv.type,
+              value: toNumber(inv.value),
+              percentage: toNumber(inv.percentage),
+            }))
+          );
+        } else {
+          // Flat structure - already an array of investments
+          investments = data.map((item: any) => ({
+            investmentId: item.investmentId || item.id,
+            name: item.name,
+            symbol: item.symbol || '',
+            type: item.type,
+            value: toNumber(item.value),
+            percentage: toNumber(item.percentage),
+          }));
+        }
+      }
+      
+      // Recalculate percentages to ensure they add up to 100%
+      const totalValue = investments.reduce((sum, inv) => sum + inv.value, 0);
+      const processed = investments.map((inv) => ({
+        ...inv,
+        percentage: totalValue > 0 ? (inv.value / totalValue) * 100 : 0,
+      }));
       
       setAllocation(processed);
       setError(null);
@@ -117,9 +148,23 @@ export default function PortfolioAllocationChart({ portfolioId }: PortfolioAlloc
     const value = typeof item.value === 'number' ? item.value : parseFloat(String(item.value)) || 0;
     return sum + value;
   }, 0);
+  
+  // Recalculate percentages to ensure they sum to exactly 100%
+  const normalizedAllocation = allocation.map((item) => {
+    const value = typeof item.value === 'number' ? item.value : parseFloat(String(item.value)) || 0;
+    const percentage = total > 0 ? (value / total) * 100 : 0;
+    return { ...item, value, percentage };
+  });
+  
+  // Verify percentages sum to 100% (with small tolerance for floating point)
+  const sumPercentage = normalizedAllocation.reduce((sum, item) => sum + item.percentage, 0);
+  if (Math.abs(sumPercentage - 100) > 0.01 && total > 0) {
+    console.warn(`Portfolio allocation percentages sum to ${sumPercentage.toFixed(2)}%, normalizing to 100%`);
+  }
+  
   let currentAngle = 0;
-  const segments = allocation.map((item, index) => {
-    const percentage = typeof item.percentage === 'number' ? item.percentage : parseFloat(String(item.percentage)) || 0;
+  const segments = normalizedAllocation.map((item, index) => {
+    const percentage = item.percentage;
     const sliceAngle = (percentage / 100) * 360;
     const startAngle = currentAngle;
     const endAngle = currentAngle + sliceAngle;
@@ -178,32 +223,40 @@ export default function PortfolioAllocationChart({ portfolioId }: PortfolioAlloc
                 />
                 <div>
                   <p className="font-medium text-sm">{item.name}</p>
-                  <p className="text-xs text-gray-500">{item.symbol}</p>
+                  <p className="text-xs text-gray-500">{item.symbol || item.type}</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="font-semibold text-sm">
-                  £{(typeof item.value === 'number' ? item.value : parseFloat(String(item.value)) || 0).toFixed(2)}
+                  £{item.value.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500">{(typeof item.percentage === 'number' ? item.percentage : parseFloat(String(item.percentage)) || 0).toFixed(1)}%</p>
+                <p className="text-xs text-gray-500">{item.percentage.toFixed(1)}%</p>
               </div>
             </div>
           ))}
         </div>
       </div>
+      
+      {/* Total Summary */}
+      {total > 0 && (
+        <div className="mt-4 pt-4 border-t text-center">
+          <p className="text-sm text-gray-600">Total Portfolio Value</p>
+          <p className="text-xl font-bold text-primary">£{total.toFixed(2)}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {normalizedAllocation.reduce((sum, item) => sum + item.percentage, 0).toFixed(1)}% allocated
+          </p>
+        </div>
+      )}
 
       {/* Summary by Type */}
       {total > 0 && (
         <div className="mt-6 pt-6 border-t">
           <h3 className="font-semibold mb-4">By Investment Type</h3>
           <div className="grid grid-cols-2 gap-4">
-            {Array.from(new Set(allocation.map((a) => a.type))).map((type, typeIndex) => {
-              const typeTotal = allocation
+            {Array.from(new Set(normalizedAllocation.map((a) => a.type))).map((type, typeIndex) => {
+              const typeTotal = normalizedAllocation
                 .filter((a) => a.type === type)
-                .reduce((sum, item) => {
-                  const value = typeof item.value === 'number' ? item.value : parseFloat(String(item.value)) || 0;
-                  return sum + value;
-                }, 0);
+                .reduce((sum, item) => sum + item.value, 0);
               const typePercentage = total > 0 ? (typeTotal / total) * 100 : 0;
 
               return (

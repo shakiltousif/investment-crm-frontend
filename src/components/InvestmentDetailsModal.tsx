@@ -211,9 +211,7 @@ export default function InvestmentDetailsModal({
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h4 className="font-semibold text-gray-800 mb-2">Important Disclaimer</h4>
             <p className="text-gray-600 text-sm">
-              This information is for educational purposes only and should not be considered as financial advice. 
-              Past performance does not guarantee future results. Please consult with a qualified financial advisor 
-              before making any investment decisions. All investments carry risk, and you may lose some or all of your invested capital.
+              This website is issued by Financial Administration Services Limited, which is authorised and regulated by the Financial Conduct Authority (FCA) (FCA Register number 122169) and registered in England and Wales under company number 1629709 whose registered address is Beech Gate, Millfield Lane, Lower Kingswood, Tadworth, Surrey, KT20 6RP.
             </p>
           </div>
         </div>

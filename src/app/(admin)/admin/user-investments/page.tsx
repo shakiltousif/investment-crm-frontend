@@ -70,6 +70,10 @@ export default function AdminUserInvestmentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [userFilter, setUserFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [approvingInvestment, setApprovingInvestment] = useState<string | null>(null);
+  const [rejectingInvestment, setRejectingInvestment] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [editingPortfolio, setEditingPortfolio] = useState<Portfolio | null>(null);
   const [manualAdjustMode, setManualAdjustMode] = useState<Record<string, boolean>>({});
@@ -120,7 +124,7 @@ export default function AdminUserInvestmentsPage() {
 
   useEffect(() => {
     fetchAllInvestments();
-  }, [currentPage, itemsPerPage, userFilter, typeFilter]);
+  }, [currentPage, itemsPerPage, userFilter, typeFilter, statusFilter]);
 
   useEffect(() => {
     if (selectedUserId) {
@@ -157,6 +161,10 @@ export default function AdminUserInvestmentsPage() {
 
       if (typeFilter) {
         params.type = typeFilter;
+      }
+
+      if (statusFilter) {
+        params.status = statusFilter;
       }
 
       const response = await api.admin.getAllInvestments(params);
@@ -255,6 +263,59 @@ export default function AdminUserInvestmentsPage() {
       setError(extractErrorMessage(err, 'Failed to update investment'));
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleApproveInvestment = async (investmentId: string) => {
+    setApprovingInvestment(investmentId);
+    setError('');
+    try {
+      await api.admin.approveInvestment(investmentId);
+      await fetchAllInvestments();
+      if (selectedUserId) {
+        await fetchUserData();
+      }
+      confirmDialog.confirm(
+        'Success',
+        'Investment approved successfully',
+        () => {},
+        'success',
+        false,
+        false,
+        'OK'
+      );
+    } catch (err: any) {
+      console.error('Failed to approve investment:', err);
+      setError(extractErrorMessage(err, 'Failed to approve investment'));
+    } finally {
+      setApprovingInvestment(null);
+    }
+  };
+
+  const handleRejectInvestment = async (investmentId: string, reason?: string) => {
+    setRejectingInvestment(investmentId);
+    setError('');
+    try {
+      await api.admin.rejectInvestment(investmentId, reason);
+      await fetchAllInvestments();
+      if (selectedUserId) {
+        await fetchUserData();
+      }
+      setRejectReason('');
+      confirmDialog.confirm(
+        'Success',
+        'Investment rejected successfully',
+        () => {},
+        'success',
+        false,
+        false,
+        'OK'
+      );
+    } catch (err: any) {
+      console.error('Failed to reject investment:', err);
+      setError(extractErrorMessage(err, 'Failed to reject investment'));
+    } finally {
+      setRejectingInvestment(null);
     }
   };
 
@@ -534,7 +595,7 @@ export default function AdminUserInvestmentsPage() {
           <CardDescription>Filter investments by user or type</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Filter by User</label>
               <select
@@ -578,6 +639,24 @@ export default function AdminUserInvestmentsPage() {
                 <option value="SAVINGS">Savings</option>
                 <option value="FIXED_DEPOSIT">Fixed Deposit</option>
                 <option value="IPO">IPO</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+              >
+                <option value="">All Statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="ACTIVE">Active</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="MATURED">Matured</option>
               </select>
             </div>
             <div>
@@ -667,6 +746,7 @@ export default function AdminUserInvestmentsPage() {
                       <th className="text-left p-3 text-sm font-medium">Current Price</th>
                       <th className="text-left p-3 text-sm font-medium">Total Value</th>
                       <th className="text-left p-3 text-sm font-medium">Gain/Loss</th>
+                      <th className="text-left p-3 text-sm font-medium">Status</th>
                       <th className="text-left p-3 text-sm font-medium">Purchase Date</th>
                       <th className="text-right p-3 text-sm font-medium">Actions</th>
                     </tr>
@@ -712,26 +792,76 @@ export default function AdminUserInvestmentsPage() {
                             {formatCurrency(investment.totalGain)} ({formatPercentage(investment.gainPercentage)}%)
                           </div>
                         </td>
+                        <td className="p-3">
+                          <Badge
+                            className={
+                              investment.status === 'PENDING'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : investment.status === 'ACTIVE'
+                                ? 'bg-green-100 text-green-800'
+                                : investment.status === 'CANCELLED'
+                                ? 'bg-red-100 text-red-800'
+                                : investment.status === 'COMPLETED'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }
+                          >
+                            {investment.status}
+                          </Badge>
+                        </td>
                         <td className="p-3 text-sm">{formatDate(investment.purchaseDate)}</td>
                         <td className="p-3">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditInvestment(investment)}
-                              title="Edit investment"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteInvestment(investment)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Delete investment"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {investment.status === 'PENDING' && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleApproveInvestment(investment.id)}
+                                  disabled={approvingInvestment === investment.id}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  title="Approve investment"
+                                >
+                                  {approvingInvestment === investment.id ? '...' : 'Approve'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const reason = prompt('Enter rejection reason (optional):');
+                                    if (reason !== null) {
+                                      handleRejectInvestment(investment.id, reason || undefined);
+                                    }
+                                  }}
+                                  disabled={rejectingInvestment === investment.id}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Reject investment"
+                                >
+                                  {rejectingInvestment === investment.id ? '...' : 'Reject'}
+                                </Button>
+                              </>
+                            )}
+                            {investment.status !== 'PENDING' && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditInvestment(investment)}
+                                  title="Edit investment"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteInvestment(investment)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Delete investment"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

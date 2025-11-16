@@ -99,12 +99,6 @@ export default function BankAccountList({
               <p className="text-gray-900 font-medium">{account.accountType}</p>
             </div>
             <div>
-              <p className="text-gray-600 text-sm">Balance</p>
-              <p className="text-gray-900 font-medium">
-                £{account.balance.toLocaleString()}
-              </p>
-            </div>
-            <div>
               <p className="text-gray-600 text-sm">Currency</p>
               <p className="text-gray-900 font-medium">{account.currency}</p>
             </div>

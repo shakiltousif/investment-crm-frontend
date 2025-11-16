@@ -18,6 +18,7 @@ interface Document {
   fileSize: number;
   mimeType: string;
   description?: string;
+  status?: string;
   isImportant: boolean;
   createdAt: string;
 }
@@ -31,6 +32,7 @@ interface Statement {
   fileSize: number;
   mimeType: string;
   description?: string;
+  status?: string;
   uploadedAt: string;
 }
 
@@ -42,6 +44,7 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showStatementUploadModal, setShowStatementUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<Document | Statement | null>(null);
 
@@ -104,6 +107,42 @@ export default function DocumentsPage() {
     } catch (err: any) {
       console.error('Failed to upload document:', err);
       alert(err.response?.data?.message || 'Failed to upload document');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleStatementUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const fileInput = e.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
+
+    if (!fileInput?.files?.[0]) {
+      alert('Please select a file');
+      return;
+    }
+
+    const period = formData.get('period') as string;
+    if (!period || period.trim() === '') {
+      alert('Please enter a period');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', fileInput.files[0]);
+      uploadFormData.append('period', period);
+      if (formData.get('description')) {
+        uploadFormData.append('description', formData.get('description') as string);
+      }
+
+      await api.documents.uploadStatement(uploadFormData);
+      setShowStatementUploadModal(false);
+      fetchStatements();
+    } catch (err: any) {
+      console.error('Failed to upload statement:', err);
+      alert(err.response?.data?.message || 'Failed to upload statement');
     } finally {
       setUploading(false);
     }
@@ -199,6 +238,21 @@ export default function DocumentsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium">{doc.fileName}</h3>
+                          {doc.status && (
+                            <Badge
+                              className={
+                                doc.status === 'VERIFIED'
+                                  ? 'bg-green-100 text-green-800'
+                                  : doc.status === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : doc.status === 'EXPIRED'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }
+                            >
+                              {doc.status}
+                            </Badge>
+                          )}
                           {doc.isImportant && (
                             <Badge className="bg-yellow-100 text-yellow-800">Important</Badge>
                           )}
@@ -298,8 +352,16 @@ export default function DocumentsPage() {
       {activeTab === 'statements' && (
         <Card>
           <CardHeader>
-            <CardTitle>Statements</CardTitle>
-            <CardDescription>Download your account statements</CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Statements</CardTitle>
+                <CardDescription>Upload and download your account statements</CardDescription>
+              </div>
+              <Button onClick={() => setShowStatementUploadModal(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Statement
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -317,7 +379,24 @@ export default function DocumentsPage() {
                     <div className="flex items-center gap-4">
                       <FileText className="h-8 w-8 text-primary" />
                       <div>
-                        <h3 className="font-medium">{stmt.fileName}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{stmt.fileName}</h3>
+                          {stmt.status && (
+                            <Badge
+                              className={
+                                stmt.status === 'VERIFIED'
+                                  ? 'bg-green-100 text-green-800'
+                                  : stmt.status === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : stmt.status === 'EXPIRED'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }
+                            >
+                              {stmt.status}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-sm text-gray-600 mt-1">
                           Period: {stmt.period}
                           {' • '}
@@ -388,6 +467,12 @@ export default function DocumentsPage() {
               <div className="text-center py-12">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">No statements available</p>
+                <Button
+                  className="mt-4"
+                  onClick={() => setShowStatementUploadModal(true)}
+                >
+                  Upload Your First Statement
+                </Button>
               </div>
             )}
           </CardContent>
@@ -455,6 +540,79 @@ export default function DocumentsPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setShowUploadModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={uploading}>
+                  {uploading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Statement Upload Modal */}
+      {showStatementUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Upload Statement</h2>
+              <button
+                onClick={() => setShowStatementUploadModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleStatementUpload}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Period <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="period"
+                    required
+                    placeholder="e.g., January 2024, Q1 2024"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the statement period (e.g., "January 2024" or "Q1 2024")
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    File (PDF only) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    required
+                    accept=".pdf"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Only PDF files are accepted for statements
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description (optional)
+                  </label>
+                  <textarea
+                    name="description"
+                    rows={3}
+                    placeholder="Optional description or notes about this statement"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowStatementUploadModal(false)}
                 >
                   Cancel
                 </Button>

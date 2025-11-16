@@ -234,6 +234,9 @@ export const api = {
     rejectTransaction: (id: string, notes?: string) => apiClient.post(`/api/admin/transactions/${id}/reject`, { notes }),
     adjustUserBalance: (userId: string, data: any) => apiClient.post(`/api/admin/users/${userId}/balance/adjust`, data),
     getAllInvestments: (params?: any) => apiClient.get('/api/admin/investments', { params }),
+    getPendingInvestments: (params?: any) => apiClient.get('/api/admin/investments/pending', { params }),
+    approveInvestment: (id: string) => apiClient.post(`/api/admin/investments/${id}/approve`),
+    rejectInvestment: (id: string, reason?: string) => apiClient.post(`/api/admin/investments/${id}/reject`, { reason }),
     getUserInvestments: (userId: string) => apiClient.get(`/api/admin/users/${userId}/investments`),
     getUserPortfolios: (userId: string) => apiClient.get(`/api/admin/users/${userId}/portfolios`),
     createUserInvestment: (userId: string, data: any) =>
@@ -264,6 +267,11 @@ export const api = {
       }),
       update: (id: string, data: any) => apiClient.put(`/api/admin/documents/${id}`, data),
       delete: (id: string) => apiClient.delete(`/api/admin/documents/${id}`),
+    },
+    statements: {
+      getAll: (params?: any) => apiClient.get('/api/admin/statements', { params }),
+      updateStatus: (id: string, data: { status: string; reason?: string }) =>
+        apiClient.put(`/api/admin/statements/${id}/status`, data),
     },
     bankAccounts: {
       getAll: (params?: any) => apiClient.get('/api/admin/bank-accounts', { params }),
@@ -307,7 +315,7 @@ export const api = {
     getAll: (params?: any) => apiClient.get('/api/documents', { params }),
     getById: (id: string) => apiClient.get(`/api/documents/${id}`),
     delete: (id: string) => apiClient.delete(`/api/documents/${id}`),
-    uploadStatement: (formData: FormData) => apiClient.post('/api/documents/statements', formData, {
+    uploadStatement: (formData: FormData) => apiClient.post('/api/documents/statements/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
     getStatements: (params?: any) => apiClient.get('/api/documents/statements', { params }),
@@ -394,6 +402,16 @@ export const api = {
     respond: (id: string, formData: FormData) => apiClient.post(`/api/problem-reports/${id}/respond`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  },
+
+  // Email Template endpoints (admin only)
+  emailTemplates: {
+    getAll: () => apiClient.get('/api/admin/email-templates'),
+    getByType: (type: string) => apiClient.get(`/api/admin/email-templates/${type}`),
+    create: (data: any) => apiClient.post('/api/admin/email-templates', data),
+    update: (type: string, data: any) => apiClient.put(`/api/admin/email-templates/${type}`, data),
+    delete: (type: string) => apiClient.delete(`/api/admin/email-templates/${type}`),
+    preview: (type: string, variables: Record<string, any>) => apiClient.post(`/api/admin/email-templates/${type}/preview`, { variables }),
   },
 };
 

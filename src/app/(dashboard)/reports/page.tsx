@@ -53,6 +53,20 @@ export default function ReportsPage() {
       const response = await api.reports.getPortfolioReport(params);
       const reportData = response.data.data;
 
+      // Log report data for debugging
+      console.log('[Report Frontend] Received report data:', {
+        summary: reportData.summary,
+        portfoliosCount: reportData.portfolios?.length || 0,
+        transactionsCount: reportData.transactions?.length || 0,
+      });
+
+      // Validate report data structure
+      if (!reportData.summary) {
+        console.warn('[Report Frontend] Summary data is missing');
+        setError('Report data is incomplete. Please try again.');
+        return;
+      }
+
       // Helper function to safely format numbers
       const formatCurrency = (value: number | undefined | null): string => {
         if (value === undefined || value === null || isNaN(value)) return '£0.00';
@@ -216,12 +230,12 @@ export default function ReportsPage() {
                       `).join('')}
                       <tr style="font-weight: bold; background: #f8f9fa;">
                         <td colspan="6">Portfolio Total</td>
-                        <td>${formatCurrency(portfolio.totalValue)}</td>
+                        <td>${formatCurrency(portfolio.totalValue || 0)}</td>
                         <td class="${(portfolio.totalGain || 0) >= 0 ? 'positive' : 'negative'}">
-                          ${formatCurrency(portfolio.totalGain)}
+                          ${formatCurrency(portfolio.totalGain || 0)}
                         </td>
                         <td class="${(portfolio.gainPercentage || 0) >= 0 ? 'positive' : 'negative'}">
-                          ${formatPercentage(portfolio.gainPercentage)}
+                          ${formatPercentage(portfolio.gainPercentage || 0)}
                         </td>
                       </tr>
                     </tbody>

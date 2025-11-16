@@ -54,10 +54,7 @@ export default function AdminMarketplacePage() {
     type: 'STOCK',
     symbol: '',
     description: '',
-    currentPrice: '',
     minimumInvestment: '',
-    maximumInvestment: '',
-    unlimitedMax: false,
     currency: 'GBP',
     riskLevel: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
     expectedReturn: '',
@@ -77,10 +74,7 @@ export default function AdminMarketplacePage() {
     type: 'STOCK',
     symbol: '',
     description: '',
-    currentPrice: '',
     minimumInvestment: '',
-    maximumInvestment: '',
-    unlimitedMax: false,
     currency: 'GBP',
     riskLevel: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
     expectedReturn: '',
@@ -135,13 +129,7 @@ export default function AdminMarketplacePage() {
         type: createFormData.type,
         symbol: createFormData.symbol || undefined,
         description: createFormData.description || undefined,
-        currentPrice: parseFloat(createFormData.currentPrice),
         minimumInvestment: parseFloat(createFormData.minimumInvestment),
-        maximumInvestment: createFormData.unlimitedMax
-          ? null
-          : createFormData.maximumInvestment
-          ? parseFloat(createFormData.maximumInvestment)
-          : undefined,
         currency: createFormData.currency,
         riskLevel: createFormData.riskLevel,
         expectedReturn: createFormData.expectedReturn ? parseFloat(createFormData.expectedReturn) : undefined,
@@ -159,10 +147,7 @@ export default function AdminMarketplacePage() {
         type: 'STOCK',
         symbol: '',
         description: '',
-        currentPrice: '',
         minimumInvestment: '',
-        maximumInvestment: '',
-        unlimitedMax: false,
         currency: 'GBP',
         riskLevel: 'MEDIUM',
         expectedReturn: '',
@@ -195,10 +180,7 @@ export default function AdminMarketplacePage() {
       type: item.type,
       symbol: item.symbol || '',
       description: item.description || '',
-      currentPrice: item.currentPrice.toString(),
       minimumInvestment: item.minimumInvestment.toString(),
-      maximumInvestment: item.maximumInvestment?.toString() || '',
-      unlimitedMax: !item.maximumInvestment,
       currency: item.currency,
       riskLevel: item.riskLevel as 'LOW' | 'MEDIUM' | 'HIGH',
       expectedReturn: item.expectedReturn?.toString() || '',
@@ -223,13 +205,7 @@ export default function AdminMarketplacePage() {
         type: editFormData.type,
         symbol: editFormData.symbol || null,
         description: editFormData.description || null,
-        currentPrice: parseFloat(editFormData.currentPrice),
         minimumInvestment: parseFloat(editFormData.minimumInvestment),
-        maximumInvestment: editFormData.unlimitedMax
-          ? null
-          : editFormData.maximumInvestment
-          ? parseFloat(editFormData.maximumInvestment)
-          : null,
         currency: editFormData.currency,
         riskLevel: editFormData.riskLevel,
         expectedReturn: editFormData.expectedReturn ? parseFloat(editFormData.expectedReturn) : null,
@@ -488,11 +464,10 @@ export default function AdminMarketplacePage() {
                     <tr className="border-b border-gray-200">
                       <th className="p-3 text-left text-sm font-semibold text-gray-700">Name</th>
                       <th className="p-3 text-left text-sm font-semibold text-gray-700">Type</th>
-                      <th className="p-3 text-left text-sm font-semibold text-gray-700">Symbol</th>
-                      <th className="p-3 text-left text-sm font-semibold text-gray-700">Price</th>
+                      <th className="p-3 text-left text-sm font-semibold text-gray-700">ISIN</th>
                       <th className="p-3 text-left text-sm font-semibold text-gray-700">Min Investment</th>
                       <th className="p-3 text-left text-sm font-semibold text-gray-700">Risk</th>
-                      <th className="p-3 text-left text-sm font-semibold text-gray-700">Expected Return</th>
+                      <th className="p-3 text-left text-sm font-semibold text-gray-700">Return %</th>
                       <th className="p-3 text-left text-sm font-semibold text-gray-700">Category</th>
                       <th className="p-3 text-left text-sm font-semibold text-gray-700">Status</th>
                       <th className="p-3 text-right text-sm font-semibold text-gray-700">Actions</th>
@@ -511,7 +486,6 @@ export default function AdminMarketplacePage() {
                           <Badge className={getTypeColor(item.type)}>{item.type}</Badge>
                         </td>
                         <td className="p-3 text-sm text-gray-600">{item.symbol || '-'}</td>
-                        <td className="p-3 text-sm font-medium">{formatCurrency(item.currentPrice)}</td>
                         <td className="p-3 text-sm">{formatCurrency(item.minimumInvestment)}</td>
                         <td className="p-3">
                           <Badge className={getRiskLevelColor(item.riskLevel)}>{item.riskLevel}</Badge>
@@ -655,13 +629,13 @@ export default function AdminMarketplacePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="create-symbol" className="text-sm font-medium">
-                  Symbol
+                  ISIN
                 </Label>
                 <Input
                   id="create-symbol"
                   value={createFormData.symbol}
                   onChange={(e) => setCreateFormData({ ...createFormData, symbol: e.target.value })}
-                  placeholder="Ticker symbol"
+                  placeholder="ISIN code"
                 />
               </div>
             </div>
@@ -682,15 +656,15 @@ export default function AdminMarketplacePage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-currentPrice" className="text-sm font-medium">
-                  Current Price <span className="text-red-500">*</span>
+                <Label htmlFor="create-minimumInvestment" className="text-sm font-medium">
+                  Minimum Investment <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="create-currentPrice"
+                  id="create-minimumInvestment"
                   type="number"
                   step="0.01"
-                  value={createFormData.currentPrice}
-                  onChange={(e) => setCreateFormData({ ...createFormData, currentPrice: e.target.value })}
+                  value={createFormData.minimumInvestment}
+                  onChange={(e) => setCreateFormData({ ...createFormData, minimumInvestment: e.target.value })}
                   required
                   placeholder="0.00"
                 />
@@ -706,52 +680,6 @@ export default function AdminMarketplacePage() {
                   required
                   placeholder="GBP"
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="create-minimumInvestment" className="text-sm font-medium">
-                  Minimum Investment <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="create-minimumInvestment"
-                  type="number"
-                  step="0.01"
-                  value={createFormData.minimumInvestment}
-                  onChange={(e) => setCreateFormData({ ...createFormData, minimumInvestment: e.target.value })}
-                  required
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-maximumInvestment" className="text-sm font-medium">
-                  Maximum Investment
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="create-maximumInvestment"
-                    type="number"
-                    step="0.01"
-                    value={createFormData.maximumInvestment}
-                    onChange={(e) => setCreateFormData({ ...createFormData, maximumInvestment: e.target.value })}
-                    placeholder="0.00"
-                    disabled={createFormData.unlimitedMax}
-                    className={createFormData.unlimitedMax ? 'opacity-50' : ''}
-                  />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="create-unlimitedMax"
-                      checked={createFormData.unlimitedMax}
-                      onChange={(e) => setCreateFormData({ ...createFormData, unlimitedMax: e.target.checked, maximumInvestment: '' })}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="create-unlimitedMax" className="text-sm text-gray-600 cursor-pointer">
-                      Unlimited
-                    </Label>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -779,7 +707,7 @@ export default function AdminMarketplacePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="create-expectedReturn" className="text-sm font-medium">
-                  Expected Return (%)
+                  Return %
                 </Label>
                 <Input
                   id="create-expectedReturn"
@@ -903,13 +831,13 @@ export default function AdminMarketplacePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-symbol" className="text-sm font-medium">
-                  Symbol
+                  ISIN
                 </Label>
                 <Input
                   id="edit-symbol"
                   value={editFormData.symbol}
                   onChange={(e) => setEditFormData({ ...editFormData, symbol: e.target.value })}
-                  placeholder="Ticker symbol"
+                  placeholder="ISIN code"
                 />
               </div>
             </div>
@@ -930,15 +858,15 @@ export default function AdminMarketplacePage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-currentPrice" className="text-sm font-medium">
-                  Current Price <span className="text-red-500">*</span>
+                <Label htmlFor="edit-minimumInvestment" className="text-sm font-medium">
+                  Minimum Investment <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="edit-currentPrice"
+                  id="edit-minimumInvestment"
                   type="number"
                   step="0.01"
-                  value={editFormData.currentPrice}
-                  onChange={(e) => setEditFormData({ ...editFormData, currentPrice: e.target.value })}
+                  value={editFormData.minimumInvestment}
+                  onChange={(e) => setEditFormData({ ...editFormData, minimumInvestment: e.target.value })}
                   required
                   placeholder="0.00"
                 />
@@ -954,52 +882,6 @@ export default function AdminMarketplacePage() {
                   required
                   placeholder="GBP"
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-minimumInvestment" className="text-sm font-medium">
-                  Minimum Investment <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="edit-minimumInvestment"
-                  type="number"
-                  step="0.01"
-                  value={editFormData.minimumInvestment}
-                  onChange={(e) => setEditFormData({ ...editFormData, minimumInvestment: e.target.value })}
-                  required
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-maximumInvestment" className="text-sm font-medium">
-                  Maximum Investment
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="edit-maximumInvestment"
-                    type="number"
-                    step="0.01"
-                    value={editFormData.maximumInvestment}
-                    onChange={(e) => setEditFormData({ ...editFormData, maximumInvestment: e.target.value })}
-                    placeholder="0.00"
-                    disabled={editFormData.unlimitedMax}
-                    className={editFormData.unlimitedMax ? 'opacity-50' : ''}
-                  />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="edit-unlimitedMax"
-                      checked={editFormData.unlimitedMax}
-                      onChange={(e) => setEditFormData({ ...editFormData, unlimitedMax: e.target.checked, maximumInvestment: '' })}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="edit-unlimitedMax" className="text-sm text-gray-600 cursor-pointer">
-                      Unlimited
-                    </Label>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -1027,7 +909,7 @@ export default function AdminMarketplacePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-expectedReturn" className="text-sm font-medium">
-                  Expected Return (%)
+                  Return %
                 </Label>
                 <Input
                   id="edit-expectedReturn"

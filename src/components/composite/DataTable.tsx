@@ -385,32 +385,55 @@ export function InvestmentTable({
       ),
     },
     {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      render: (value) => {
+        if (!value) return null;
+        const statusColors: Record<string, string> = {
+          PENDING: 'bg-yellow-100 text-yellow-800',
+          ACTIVE: 'bg-green-100 text-green-800',
+          CANCELLED: 'bg-red-100 text-red-800',
+          COMPLETED: 'bg-blue-100 text-blue-800',
+          MATURED: 'bg-gray-100 text-gray-800',
+        };
+        return (
+          <Badge className={statusColors[value] || 'bg-gray-100 text-gray-800'}>
+            {value}
+          </Badge>
+        );
+      },
+    },
+    {
       key: 'actions',
       label: 'Actions',
-      render: (_, row) => (
-        <div className="flex gap-2">
-          {onBuy && (
-            <Button size="sm" variant="outline" onClick={() => onBuy(row)}>
-              Buy More
-            </Button>
-          )}
-          {onSell && (
-            <Button size="sm" variant="outline" onClick={() => onSell(row)}>
-              Sell
-            </Button>
-          )}
-          {onDelete && (
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              onClick={() => onDelete(row)}
-              className="text-destructive hover:text-destructive"
-            >
-              Delete
-            </Button>
-          )}
-        </div>
-      ),
+      render: (_, row) => {
+        const isActive = row.status === 'ACTIVE' || !row.status;
+        return (
+          <div className="flex gap-2">
+            {onBuy && isActive && (
+              <Button size="sm" variant="outline" onClick={() => onBuy(row)}>
+                Buy More
+              </Button>
+            )}
+            {onSell && isActive && (
+              <Button size="sm" variant="outline" onClick={() => onSell(row)}>
+                Sell
+              </Button>
+            )}
+            {onDelete && (
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => onDelete(row)}
+                className="text-destructive hover:text-destructive"
+              >
+                Delete
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 

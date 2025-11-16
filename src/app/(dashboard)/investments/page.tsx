@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -8,6 +8,7 @@ import InvestmentList from '@/components/InvestmentList';
 import MarketplaceList from '@/components/MarketplaceList';
 import BuyInvestmentModal from '@/components/BuyInvestmentModal';
 import SellInvestmentModal from '@/components/SellInvestmentModal';
+import { RefreshCw } from 'lucide-react';
 
 interface Investment {
   id: string;
@@ -24,6 +25,7 @@ interface Investment {
   purchaseDate: string;
   portfolioId: string;
   portfolioName: string;
+  status?: string;
 }
 
 export default function InvestmentsPage() {
@@ -42,9 +44,12 @@ export default function InvestmentsPage() {
     type: '',
     search: '',
   });
+  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'PENDING' | 'ALL'>('ACTIVE');
   const [showingMarketplace, setShowingMarketplace] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -52,17 +57,51 @@ export default function InvestmentsPage() {
       fetchPortfolios();
       fetchMarketplaceInvestments();
     }
-  }, [isAuthenticated, filters]);
+  }, [isAuthenticated, filters, activeTab]);
 
-  const fetchInvestments = async () => {
+  // Auto-refresh investments every 5 minutes to update gain/loss values
+  useEffect(() => {
+    if (isAuthenticated && !showingMarketplace) {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up auto-refresh every 5 minutes (300000 ms)
+      refreshIntervalRef.current = setInterval(() => {
+        fetchInvestments(false);
+      }, 300000); // 5 minutes
+
+      // Cleanup on unmount or when dependencies change
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+        }
+      };
+    }
+  }, [isAuthenticated, showingMarketplace]);
+
+  const fetchInvestments = async (showRefreshIndicator = false) => {
     try {
-      setLoading(true);
+      if (showRefreshIndicator) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError('');
       const params: any = {};
       
       if (filters.portfolioId) params.portfolioId = filters.portfolioId;
       if (filters.type) params.type = filters.type;
       if (filters.search) params.search = filters.search;
+      
+      // Add status filter based on active tab
+      if (activeTab !== 'ALL') {
+        params.status = activeTab;
+      } else {
+        // For "ALL" tab, don't send status parameter - backend will return all
+        params.status = 'ALL';
+      }
 
       try {
         const response = await api.investments.getAll(params);
@@ -88,7 +127,12 @@ export default function InvestmentsPage() {
       setShowingMarketplace(true);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    fetchInvestments(true);
   };
 
   const fetchMarketplaceInvestments = async () => {
@@ -166,21 +210,32 @@ export default function InvestmentsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Investments</h1>
-        <button
-          onClick={handleBrowseMarketplace}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
-        >
-          Browse Marketplace
-        </button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Investments</h1>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing || loading}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            title="Refresh investments to update gain/loss values"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
+            onClick={handleBrowseMarketplace}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base bg-primary text-white rounded-lg hover:bg-primary/90 transition w-full sm:w-auto"
+          >
+            Browse Marketplace
+          </button>
+        </div>
       </div>
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
           <p className="text-red-700">{error}</p>
           <button 
-            onClick={fetchInvestments}
+            onClick={() => fetchInvestments(false)}
             className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90"
           >
             Retry
@@ -249,7 +304,7 @@ export default function InvestmentsPage() {
             <button
               onClick={() => {
                 setShowingMarketplace(false);
-                fetchInvestments();
+                fetchInvestments(false);
               }}
               className="text-sm text-primary hover:text-primary/80"
             >
@@ -269,22 +324,69 @@ export default function InvestmentsPage() {
           />
         </div>
       ) : (
-        <InvestmentList
-          investments={investments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
-          onBuy={handleBuyInvestment}
-          onSell={handleSellInvestment}
-          onRefresh={fetchInvestments}
-          pagination={{
-            page: currentPage,
-            pageSize: itemsPerPage,
-            total: investments.length,
-            onPageChange: setCurrentPage,
-            onPageSizeChange: (size) => {
-              setItemsPerPage(size);
-              setCurrentPage(1);
-            },
-          }}
-        />
+        <div>
+          {/* Status Tabs */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="flex space-x-1 border-b border-gray-200">
+              <button
+                onClick={() => {
+                  setActiveTab('ACTIVE');
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 font-medium text-sm transition-colors ${
+                  activeTab === 'ACTIVE'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('PENDING');
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 font-medium text-sm transition-colors ${
+                  activeTab === 'PENDING'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Pending
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('ALL');
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 font-medium text-sm transition-colors ${
+                  activeTab === 'ALL'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                All
+              </button>
+            </div>
+          </div>
+
+          <InvestmentList
+            investments={investments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+            onBuy={handleBuyInvestment}
+            onSell={handleSellInvestment}
+            onRefresh={fetchInvestments}
+            pagination={{
+              page: currentPage,
+              pageSize: itemsPerPage,
+              total: investments.length,
+              onPageChange: setCurrentPage,
+              onPageSizeChange: (size) => {
+                setItemsPerPage(size);
+                setCurrentPage(1);
+              },
+            }}
+          />
+        </div>
       )}
 
       {/* Buy Investment Modal */}

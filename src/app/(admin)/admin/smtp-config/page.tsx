@@ -20,6 +20,7 @@ interface SMTPConfig {
   user: string;
   password: string;
   from?: string;
+  senderName?: string;
   isActive?: boolean;
 }
 
@@ -37,6 +38,7 @@ export default function SMTPConfigPage() {
     user: '',
     password: '',
     from: '',
+    senderName: 'Fidelity Investment Portal',
     isActive: true,
   });
   const [loading, setLoading] = useState(true);
@@ -61,6 +63,7 @@ export default function SMTPConfigPage() {
         setConfig({
           ...response.data.data,
           password: '', // Don't show existing password
+          senderName: response.data.data.senderName || 'Fidelity Investment Portal',
         });
         setHasExistingConfig(true);
       } else {
@@ -316,6 +319,20 @@ export default function SMTPConfigPage() {
               />
               <p className="text-xs text-gray-500">
                 Default sender address (if different from username). Leave empty to use username.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="senderName">Sender Name (Optional)</Label>
+              <Input
+                id="senderName"
+                type="text"
+                placeholder="Fidelity Investment Portal"
+                value={config.senderName || 'Fidelity Investment Portal'}
+                onChange={(e) => handleInputChange('senderName', e.target.value)}
+              />
+              <p className="text-xs text-gray-500">
+                Display name shown in email header. Defaults to "Fidelity Investment Portal" if left empty.
               </p>
             </div>
 

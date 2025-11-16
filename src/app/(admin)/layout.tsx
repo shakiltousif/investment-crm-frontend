@@ -24,6 +24,7 @@ import {
   User,
   LogOut,
   AlertCircle,
+  FileText,
 } from 'lucide-react';
 
 export default function AdminLayout({
@@ -273,6 +274,17 @@ export default function AdminLayout({
               <span>Document Management</span>
             </Link>
             <Link
+              href="/admin/statements"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/admin/statements'
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <FileText className={`h-5 w-5 ${pathname === '/admin/statements' ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Statements</span>
+            </Link>
+            <Link
               href="/admin/bank-accounts"
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                 pathname === '/admin/bank-accounts'
@@ -399,6 +411,17 @@ export default function AdminLayout({
               <span>SMTP Configuration</span>
             </Link>
             <Link
+              href="/admin/email-templates"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                pathname === '/admin/email-templates' || pathname?.startsWith('/admin/email-templates/')
+                  ? 'bg-white text-primary font-semibold shadow-lg shadow-primary/20'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <FileText className={`h-5 w-5 ${pathname === '/admin/email-templates' || pathname?.startsWith('/admin/email-templates/') ? 'text-primary' : 'text-white/80 group-hover:text-white'}`} />
+              <span>Email Templates</span>
+            </Link>
+            <Link
               href="/admin/profile"
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                 pathname === '/admin/profile'
@@ -515,6 +538,18 @@ export default function AdminLayout({
             >
               <FolderOpen className="h-5 w-5" />
               <span>Document Management</span>
+            </Link>
+            <Link 
+              href="/admin/statements" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                pathname === '/admin/statements'
+                  ? 'bg-white text-primary font-semibold shadow-lg'
+                  : 'text-white/90 hover:bg-white/10'
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <FileText className="h-5 w-5" />
+              <span>Statements</span>
             </Link>
             <Link 
               href="/admin/bank-accounts" 

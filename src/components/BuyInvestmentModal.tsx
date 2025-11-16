@@ -324,8 +324,9 @@ export default function BuyInvestmentModal({
           {step === 'confirm' && (
             <div className="text-center py-8">
               <div className="text-4xl mb-4">✓</div>
-              <p className="text-lg font-semibold text-green-600">Purchase Successful!</p>
-              <p className="text-gray-600 mt-2">Your investment has been added to your portfolio.</p>
+              <p className="text-lg font-semibold text-yellow-600">Investment Request Submitted!</p>
+              <p className="text-gray-600 mt-2">Your investment request has been submitted and is pending admin approval.</p>
+              <p className="text-gray-500 text-sm mt-2">You will be notified once it has been reviewed.</p>
             </div>
           )}
         </div>
@@ -359,7 +360,7 @@ export default function BuyInvestmentModal({
               disabled={loading}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             >
-              {loading ? 'Processing...' : 'Confirm Purchase'}
+              {loading ? 'Processing...' : 'Send for Review'}
             </button>
           )}
         </div>

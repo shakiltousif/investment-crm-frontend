@@ -50,20 +50,6 @@ export default function InvestmentList({
   pagination,
 }: InvestmentListProps) {
 
-  const handleDelete = async (investmentId: string) => {
-    if (!confirm('Are you sure you want to delete this investment?')) {
-      return;
-    }
-
-    try {
-      await api.investments.delete(investmentId);
-      onRefresh?.();
-    } catch (err: any) {
-      console.error('Investment delete error:', err);
-      alert(err.response?.data?.message || 'Failed to delete investment');
-    }
-  };
-
   const exportToCSV = () => {
     const csvContent = [
       ['Name', 'Type', 'Symbol', 'Quantity', 'Purchase Price', 'Current Price', 'Total Value', 'Total Gain', 'Gain %', 'Purchase Date', 'Portfolio'],
@@ -117,7 +103,6 @@ export default function InvestmentList({
         investments={investments}
         onBuy={onBuy}
         onSell={onSell}
-        onDelete={(investment) => handleDelete(investment.id)}
         loading={loading}
         pagination={pagination}
       />
